@@ -2,43 +2,50 @@ name: Build MetaModule Plugin
 
 on:
   push:
-    branches: [ "main", "master" ]
+    branches: [ main ]
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
-      - name: 1. Checkout
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: 2. Setup 4ms SDK and ARM Toolchain
+      - name: Install build tools
         run: |
-          sudo apt-get update && sudo apt-get install -y ninja-build cmake wget
-          
-          # Clone SDK into the project folder
-          git clone --depth 1 https://github.com/4ms/metamodule-plugin-sdk.git metamodule-plugin-sdk
-          
-          # Download ARM Toolchain 12.3.rel1
-          wget https://developer.arm.com/-/media/Files/downloads/gnu/12.3.rel1/binrel/arm-gnu-toolchain-12.3.rel1-x86_64-arm-none-eabi.tar.xz
-          tar -xf arm-gnu-toolchain-12.3.rel1-x86_64-arm-none-eabi.tar.xz
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build git python3
 
-      - name: 3. Configure and Build
+      - name: Install ARM toolchain v12.3
         run: |
-          # Define absolute paths
-          export SDK_ROOT=${{ github.workspace }}/metamodule-plugin-sdk
-          export TOOLCHAIN_ROOT=${{ github.workspace }}/arm-gnu-toolchain-12.3.rel1-x86_64-arm-none-eabi
-          
-          # Use --fresh to clear the broken cache from build #55
-          cmake --fresh -G Ninja -B build \
-          -DCMAKE_TOOLCHAIN_FILE=$SDK_ROOT/toolchain-arm-none-eabi.cmake \
-          -DTOOLCHAIN_BASE_DIR=$TOOLCHAIN_ROOT \
-          -DMETAMODULE_SDK_DIR=$SDK_ROOT
-          
-          cmake --build build
+          wget -q https://developer.arm.com/-/media/Files/downloads/gnu/12.3.rel1/binrel/arm-gnu-toolchain-12.3.rel1-x86_64-arm-none-eabi.tar.xz
+          tar xf arm-gnu-toolchain-12.3.rel1-x86_64-arm-none-eabi.tar.xz
+          echo "${{ github.workspace }}/arm-gnu-toolchain-12.3.rel1-x86_64-arm-none-eabi/bin" >> $GITHUB_PATH
 
-      - name: 4. Archive Artifact
+      - name: Verify toolchain
+        run: arm-none-eabi-gcc --version
+
+      - name: Fetch MetaModule Plugin SDK
+        run: |
+          git clone --depth=1 --recurse-submodules \
+            https://github.com/4ms/metamodule-plugin-sdk.git \
+            ../metamodule-plugin-sdk
+
+      - name: Create empty assets dir
+        run: mkdir -p assets
+
+      - name: Configure
+        run: |
+          cmake --fresh -B build -G Ninja
+
+      - name: Build
+        run: cmake --build build
+
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: RytmCC-Plugin
-          path: build/*.mmplugin
+          name: RytmCC-mmplugin
+          path: metamodule-plugins/
+          retention-days: 30
