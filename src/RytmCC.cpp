@@ -30,28 +30,30 @@ static const char* KnobNames[NumKnobs] = {
 namespace RytmCC {
 
 static constexpr MetaModule::Knob makeKnob(float px, float py,
+                                            float sz,
                                             std::string_view sn,
                                             std::string_view ln) {
     MetaModule::Knob knob{};
     knob.x_mm          = px;
     knob.y_mm          = py;
+    knob.width_mm      = sz;
+    knob.height_mm     = sz;
     knob.short_name    = sn;
     knob.long_name     = ln;
     knob.min_value     = 0.f;
     knob.max_value     = 1.f;
     knob.default_value = 0.f;
+    knob.min_angle     = -135.f;
+    knob.max_angle     = 135.f;
     return knob;
 }
 
-static constexpr MetaModule::MomentaryButton makeBtn(float px, float py,
-                                                      std::string_view sn,
-                                                      std::string_view ln) {
-    MetaModule::MomentaryButton btn{};
-    btn.x_mm       = px;
-    btn.y_mm       = py;
-    btn.short_name = sn;
-    btn.long_name  = ln;
-    return btn;
+static constexpr MetaModule::AltParamAction makeAltAction(std::string_view sn,
+                                                            std::string_view ln) {
+    MetaModule::AltParamAction act{};
+    act.short_name = sn;
+    act.long_name  = ln;
+    return act;
 }
 
 static constexpr MetaModule::DynamicTextDisplay makeDisplay(float px, float py,
@@ -75,18 +77,23 @@ struct Info : MetaModule::ModuleInfoBase {
     static constexpr std::string_view png_filename = "RytmCC/RytmCC.png";
     static constexpr std::string_view svg_filename = "";
 
+    // Circle diameter in mm = 22px * (81.28mm / 200px) = 8.94mm radius = 17.88mm diameter
+    static constexpr float KnobSize = 17.88f;
+
+    // Display: 184px wide * (81.28/200) = 74.8mm, 24px tall * (128.5/240) = 12.85mm
+    // Display top-left at px(8,24) = mm(3.25, 12.85)
     static constexpr std::array<MetaModule::Element, 8> Elements {{
-        makeKnob   (13.8f,  56.2f, "K1",  "Knob 1 Red"),
-        makeKnob   (40.6f,  56.2f, "K2",  "Knob 2 Orange"),
-        makeKnob   (67.5f,  56.2f, "K3",  "Knob 3 Yellow"),
-        makeKnob   (13.8f,  95.3f, "K4",  "Knob 4 Green"),
-        makeKnob   (40.6f,  95.3f, "K5",  "Knob 5 Blue"),
-        makeKnob   (67.5f,  95.3f, "K6",  "Knob 6 Purple"),
-        makeBtn    (40.6f, 117.2f, "Set", "Next Set"),
-        makeDisplay( 4.0f,  12.0f, 73.0f, 12.0f, "Display"),
+        makeKnob   (13.8f, 56.2f, KnobSize, "K1", "Knob 1 Red"),
+        makeKnob   (40.6f, 56.2f, KnobSize, "K2", "Knob 2 Orange"),
+        makeKnob   (67.5f, 56.2f, KnobSize, "K3", "Knob 3 Yellow"),
+        makeKnob   (13.8f, 95.3f, KnobSize, "K4", "Knob 4 Green"),
+        makeKnob   (40.6f, 95.3f, KnobSize, "K5", "Knob 5 Blue"),
+        makeKnob   (67.5f, 95.3f, KnobSize, "K6", "Knob 6 Purple"),
+        makeDisplay( 3.25f, 12.85f, 74.8f, 12.85f, "Display"),
+        makeAltAction("Set", "Next Set — cycles knob set"),
     }};
 
-    enum Params  { K1, K2, K3, K4, K5, K6, SetBtn, NumParams };
+    enum Params  { K1, K2, K3, K4, K5, K6, NumParams };
     enum Lights  { MainDisplay };
 };
 
@@ -98,23 +105,13 @@ public:
                 savedCC[s][k] = DefaultCC[s][k];
         for (int k = 0; k < NumKnobs; k++)
             lastVal[k] = -1.f;
-        snprintf(line1, sizeof(line1), "Set 1 - ready");
+        snprintf(line1, sizeof(line1), "RYTM CC - Set 1");
         snprintf(line2, sizeof(line2), "Turn a knob");
     }
 
     void set_samplerate(float) override {}
 
     void update() override {
-        float btnVal = params[Info::SetBtn];
-        if (btnVal > 0.5f && lastBtn <= 0.5f) {
-            activeSet = (activeSet + 1) % NumSets;
-            for (int k = 0; k < NumKnobs; k++) lastVal[k] = -1.f;
-            snprintf(line1, sizeof(line1), "Set %d", activeSet + 1);
-            snprintf(line2, sizeof(line2), "Turn a knob");
-            displayTimer = 48000 * 2;
-        }
-        lastBtn = btnVal;
-
         if (displayTimer > 0) displayTimer--;
 
         for (int k = 0; k < NumKnobs; k++) {
@@ -130,28 +127,40 @@ public:
                 msg.bytes[2] = midiVal;
                 midiOut.sendMessage(msg);
 
-                snprintf(line1, sizeof(line1), "%s CC%d",
+                snprintf(line1, sizeof(line1), "%s  CC%d",
                     KnobNames[k], ccNum);
-                snprintf(line2, sizeof(line2), "Val:%d Set:%d",
+                snprintf(line2, sizeof(line2), "Val:%d  Set:%d",
                     midiVal, activeSet + 1);
                 displayTimer = 48000 * 2;
             }
         }
     }
 
-    size_t get_display_text(int display_id, std::span<char> buf) override {
-        if (display_id != Info::MainDisplay) return 0;
-        int len = snprintf(buf.data(), buf.size(), "%s\n%s", line1, line2);
-        return len > 0 ? static_cast<size_t>(len) : 0;
-    }
-
+    // AltParamAction — called when user selects "Next Set" from menu
     void set_param(int id, float val) override {
-        if (id >= 0 && id < Info::NumParams) params[id] = val;
+        if (id >= 0 && id < Info::NumParams) {
+            params[id] = val;
+        } else if (id == Info::NumParams) {
+            // SetBtn action — cycle set
+            if (val > 0.5f) {
+                activeSet = (activeSet + 1) % NumSets;
+                for (int k = 0; k < NumKnobs; k++) lastVal[k] = -1.f;
+                snprintf(line1, sizeof(line1), "Set %d", activeSet + 1);
+                snprintf(line2, sizeof(line2), "Turn a knob");
+                displayTimer = 48000 * 2;
+            }
+        }
     }
 
     float get_param(int id) const override {
         if (id >= 0 && id < Info::NumParams) return params[id];
         return 0.f;
+    }
+
+    size_t get_display_text(int display_id, std::span<char> buf) override {
+        if (display_id != Info::MainDisplay) return 0;
+        int len = snprintf(buf.data(), buf.size(), "%s\n%s", line1, line2);
+        return len > 0 ? static_cast<size_t>(len) : 0;
     }
 
     void set_input(int, float) override {}
