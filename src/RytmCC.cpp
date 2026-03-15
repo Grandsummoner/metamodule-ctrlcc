@@ -54,16 +54,17 @@ static constexpr MetaModule::MomentaryButton makeBtn(float px, float py,
     return btn;
 }
 
-static constexpr MetaModule::TextDisplay makeDisplay(float px, float py,
-                                                      float w, float h,
-                                                      std::string_view sn) {
-    MetaModule::TextDisplay disp{};
+static constexpr MetaModule::DynamicTextDisplay makeDisplay(float px, float py,
+                                                             float w, float h,
+                                                             std::string_view sn) {
+    MetaModule::DynamicTextDisplay disp{};
     disp.x_mm       = px;
     disp.y_mm       = py;
     disp.width_mm   = w;
     disp.height_mm  = h;
     disp.short_name = sn;
     disp.long_name  = sn;
+    disp.wrap_mode  = MetaModule::TextDisplay::WrapMode::Wrap;
     return disp;
 }
 
@@ -86,7 +87,7 @@ struct Info : MetaModule::ModuleInfoBase {
     }};
 
     enum Params  { K1, K2, K3, K4, K5, K6, SetBtn, NumParams };
-    enum Displays{ MainDisplay };
+    enum Lights  { MainDisplay };
 };
 
 class Module : public CoreProcessor {
@@ -104,7 +105,6 @@ public:
     void set_samplerate(float) override {}
 
     void update() override {
-        // Set button rising edge
         float btnVal = params[Info::SetBtn];
         if (btnVal > 0.5f && lastBtn <= 0.5f) {
             activeSet = (activeSet + 1) % NumSets;
@@ -117,7 +117,6 @@ public:
 
         if (displayTimer > 0) displayTimer--;
 
-        // Send MIDI CC for any changed knob
         for (int k = 0; k < NumKnobs; k++) {
             float v = params[k];
             if (v != lastVal[k]) {
@@ -131,9 +130,9 @@ public:
                 msg.bytes[2] = midiVal;
                 midiOut.sendMessage(msg);
 
-                snprintf(line1, sizeof(line1), "%s  CC%d",
+                snprintf(line1, sizeof(line1), "%s CC%d",
                     KnobNames[k], ccNum);
-                snprintf(line2, sizeof(line2), "Val:%d  Set:%d",
+                snprintf(line2, sizeof(line2), "Val:%d Set:%d",
                     midiVal, activeSet + 1);
                 displayTimer = 48000 * 2;
             }
