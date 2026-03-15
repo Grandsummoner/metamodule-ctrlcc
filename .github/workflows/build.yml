@@ -33,16 +33,18 @@ jobs:
             https://github.com/4ms/metamodule-plugin-sdk.git \
             metamodule-plugin-sdk
 
-      - name: Inspect SDK headers 3
+      - name: Inspect rack midi
         run: |
-          echo "=== midi_message.hh ===" 
-          cat metamodule-plugin-sdk/core-interface/midi/midi_message.hh
-          echo "=== element_info.hh ===" 
-          cat metamodule-plugin-sdk/core-interface/CoreModules/elements/element_info.hh | head -60
-          echo "=== element_counter.hh ===" 
-          cat metamodule-plugin-sdk/core-interface/CoreModules/elements/element_counter.hh | head -60
-          echo "=== base_element.hh lines 80-160 ===" 
-          sed -n '80,160p' metamodule-plugin-sdk/core-interface/CoreModules/elements/base_element.hh
+          echo "=== rack-interface midi headers ===" 
+          find metamodule-plugin-sdk/rack-interface -name "*.hpp" | xargs grep -l -i "midi" 2>/dev/null
+          echo "=== midi.hpp ===" 
+          cat metamodule-plugin-sdk/rack-interface/include/midi.hpp 2>/dev/null || echo "NOT FOUND"
+          echo "=== core-interface files with send ===" 
+          find metamodule-plugin-sdk/core-interface -name "*.hh" | xargs grep -l "send" 2>/dev/null
+          echo "=== coreprocessor.md ===" 
+          cat metamodule-plugin-sdk/docs/coreprocessor.md 2>/dev/null | head -100 || echo "NOT FOUND"
+          echo "=== system-api.md ===" 
+          cat metamodule-plugin-sdk/docs/system-api.md 2>/dev/null | head -100 || echo "NOT FOUND"
 
       - name: Create empty assets dir
         run: mkdir -p assets
