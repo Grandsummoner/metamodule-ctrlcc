@@ -2,7 +2,7 @@ name: Build MetaModule Plugin
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "master" ]
   workflow_dispatch:
 
 jobs:
@@ -12,12 +12,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          # FIX 1: This pulls the missing 'metamodule-plugin-sdk' files
-          submodules: recursive
           fetch-depth: 0
+          submodules: 'recursive' # Pulls the SDK
+
+      - name: Force SDK Download
+        # This is the "Safety Net" in case the checkout step misses the submodule
+        run: |
+          git submodule init
+          git submodule update --remote --recursive
 
       - name: Install Build Tools
-        # FIX 2: This installs 'ninja-build' so CMake can find it
         run: |
           sudo apt-get update
           sudo apt-get install -y ninja-build cmake
