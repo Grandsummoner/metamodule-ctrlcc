@@ -54,10 +54,10 @@ static constexpr MetaModule::MomentaryButton makeBtn(float px, float py,
     return btn;
 }
 
-static constexpr MetaModule::Display makeDisplay(float px, float py,
-                                                   float w, float h,
-                                                   std::string_view sn) {
-    MetaModule::Display disp{};
+static constexpr MetaModule::TextDisplay makeDisplay(float px, float py,
+                                                      float w, float h,
+                                                      std::string_view sn) {
+    MetaModule::TextDisplay disp{};
     disp.x_mm       = px;
     disp.y_mm       = py;
     disp.width_mm   = w;
@@ -97,7 +97,7 @@ public:
                 savedCC[s][k] = DefaultCC[s][k];
         for (int k = 0; k < NumKnobs; k++)
             lastVal[k] = -1.f;
-        snprintf(line1, sizeof(line1), "Set 1 — ready");
+        snprintf(line1, sizeof(line1), "Set 1 - ready");
         snprintf(line2, sizeof(line2), "Turn a knob");
     }
 
@@ -111,7 +111,7 @@ public:
             for (int k = 0; k < NumKnobs; k++) lastVal[k] = -1.f;
             snprintf(line1, sizeof(line1), "Set %d", activeSet + 1);
             snprintf(line2, sizeof(line2), "Turn a knob");
-            displayTimer = 48000 * 2; // show for 2 seconds
+            displayTimer = 48000 * 2;
         }
         lastBtn = btnVal;
 
@@ -122,7 +122,7 @@ public:
             float v = params[k];
             if (v != lastVal[k]) {
                 lastVal[k] = v;
-                uint8_t ccNum  = savedCC[activeSet][k];
+                uint8_t ccNum   = savedCC[activeSet][k];
                 uint8_t midiVal = static_cast<uint8_t>(v * 127.f) & 0x7F;
 
                 rack::midi::Message msg;
@@ -131,10 +131,9 @@ public:
                 msg.bytes[2] = midiVal;
                 midiOut.sendMessage(msg);
 
-                // Update display
                 snprintf(line1, sizeof(line1), "%s  CC%d",
                     KnobNames[k], ccNum);
-                snprintf(line2, sizeof(line2), "Val: %d  Set: %d",
+                snprintf(line2, sizeof(line2), "Val:%d  Set:%d",
                     midiVal, activeSet + 1);
                 displayTimer = 48000 * 2;
             }
@@ -144,7 +143,7 @@ public:
     size_t get_display_text(int display_id, std::span<char> buf) override {
         if (display_id != Info::MainDisplay) return 0;
         int len = snprintf(buf.data(), buf.size(), "%s\n%s", line1, line2);
-        return len > 0 ? len : 0;
+        return len > 0 ? static_cast<size_t>(len) : 0;
     }
 
     void set_param(int id, float val) override {
@@ -179,7 +178,7 @@ public:
                         sv[1 + s * NumKnobs + k]);
         }
         for (int k = 0; k < NumKnobs; k++) lastVal[k] = -1.f;
-        snprintf(line1, sizeof(line1), "Set %d — loaded", activeSet + 1);
+        snprintf(line1, sizeof(line1), "Set %d loaded", activeSet + 1);
         snprintf(line2, sizeof(line2), "Turn a knob");
     }
 
