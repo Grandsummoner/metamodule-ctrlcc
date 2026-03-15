@@ -82,12 +82,12 @@ struct Info : MetaModule::ModuleInfoBase {
     // Knobs: -2mm X, +2mm Y from last position (13.28, 54.34) and (93.43)
     // Display: moved right and down to sit inside dark box
     static constexpr std::array<MetaModule::Element, 8> Elements {{
-        makeKnob   (11.28f, 56.34f, KnobSize, "K1", "Knob 1 Red"),
-        makeKnob   (38.37f, 56.34f, KnobSize, "K2", "Knob 2 Orange"),
-        makeKnob   (65.46f, 56.34f, KnobSize, "K3", "Knob 3 Yellow"),
-        makeKnob   (11.28f, 95.43f, KnobSize, "K4", "Knob 4 Green"),
-        makeKnob   (38.37f, 95.43f, KnobSize, "K5", "Knob 5 Blue"),
-        makeKnob   (65.46f, 95.43f, KnobSize, "K6", "Knob 6 Purple"),
+        makeKnob   (13.55f, 54.61f, KnobSize, "K1", "Knob 1 Red"),
+        makeKnob   (40.64f, 54.61f, KnobSize, "K2", "Knob 2 Orange"),
+        makeKnob   (67.74f, 54.61f, KnobSize, "K3", "Knob 3 Yellow"),
+        makeKnob   (13.55f, 91.55f, KnobSize, "K4", "Knob 4 Green"),
+        makeKnob   (40.64f, 91.55f, KnobSize, "K5", "Knob 5 Blue"),
+        makeKnob   (67.74f, 91.55f, KnobSize, "K6", "Knob 6 Purple"),
         makeDisplay(20.00f, 22.00f, 40.00f,  9.00f, "Display"),
         makeAltAction("Set", "Next Set"),
     }};
