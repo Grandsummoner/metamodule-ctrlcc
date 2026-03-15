@@ -9,40 +9,29 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: 1. Checkout Code
+      - name: 1. Checkout
         uses: actions/checkout@v4
 
       - name: 2. Setup Tools and SDK
         run: |
           sudo apt-get update && sudo apt-get install -y ninja-build cmake wget
-          
-          # Clone SDK
-          git clone --depth 1 https://github.com/4ms/metamodule-plugin-sdk.git metamodule-plugin-sdk
-          
-          # Download ARM Compiler
+          git clone --depth 1 https://github.com/4ms/metamodule-plugin-sdk.git ${{ github.workspace }}/metamodule-plugin-sdk
           wget https://developer.arm.com/-/media/Files/downloads/gnu/12.3.rel1/binrel/arm-gnu-toolchain-12.3.rel1-x86_64-arm-none-eabi.tar.xz
-          
-          # Force extraction and WAIT
           tar -xf arm-gnu-toolchain-12.3.rel1-x86_64-arm-none-eabi.tar.xz
-          
-          # Verification: This will fail the build here if the folders are missing
-          ls -d metamodule-plugin-sdk
-          ls -d arm-gnu-toolchain-12.3.rel1-x86_64-arm-none-eabi
 
       - name: 3. Configure and Build
         run: |
-          # Use absolute path to the workspace
-          export SDK_PATH=${{ github.workspace }}/metamodule-plugin-sdk
-          export TOOLCHAIN_PATH=${{ github.workspace }}/arm-gnu-toolchain-12.3.rel1-x86_64-arm-none-eabi
+          # Delete any old failed attempts
+          rm -rf build
           
           cmake -B build -G Ninja \
           -DCMAKE_MAKE_PROGRAM=/usr/bin/ninja \
-          -DCMAKE_TOOLCHAIN_FILE=$SDK_PATH/toolchain-arm-none-eabi.cmake \
-          -DTOOLCHAIN_BASE_DIR=$TOOLCHAIN_PATH
+          -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/metamodule-plugin-sdk/toolchain-arm-none-eabi.cmake \
+          -DTOOLCHAIN_BASE_DIR=${{ github.workspace }}/arm-gnu-toolchain-12.3.rel1-x86_64-arm-none-eabi
           
           cmake --build build
 
-      - name: 4. Upload Plugin
+      - name: 4. Upload
         uses: actions/upload-artifact@v4
         with:
           name: RytmCC-Plugin
