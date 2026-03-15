@@ -30,6 +30,13 @@ jobs:
             https://github.com/4ms/metamodule-plugin-sdk.git \
             metamodule-plugin-sdk
 
+      - name: Inspect TextDisplay
+        run: |
+          echo "=== TextDisplay struct ===" 
+          grep -r "TextDisplay" metamodule-plugin-sdk/core-interface/ -A 10 | head -60
+          echo "=== elements.hh ===" 
+          cat metamodule-plugin-sdk/core-interface/CoreModules/elements/elements.hh
+
       - name: Create empty assets dir
         run: mkdir -p assets
 
