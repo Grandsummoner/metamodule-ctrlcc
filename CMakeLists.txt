@@ -18,7 +18,7 @@ target_include_directories(RytmCC PRIVATE src)
 create_plugin(
     SOURCE_LIB      RytmCC
     PLUGIN_NAME     RytmCC
-    PLUGIN_JSON     ${CMAKE_CURRENT_LIST_DIR}/plugin-mm.json
+    PLUGIN_JSON     ${CMAKE_CURRENT_LIST_DIR}/plugin.json
     SOURCE_ASSETS   ${CMAKE_CURRENT_LIST_DIR}/assets
     DESTINATION     ${CMAKE_CURRENT_LIST_DIR}/metamodule-plugins/RytmCC
 )
