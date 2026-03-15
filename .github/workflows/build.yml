@@ -2,54 +2,46 @@ name: Build MetaModule Plugin
 
 on:
   push:
-    branches: [ main ]
-  workflow_dispatch:
+    branches: [ "main" ]
+    tags: [ "v*" ]
+  pull_request:
+    branches: [ "main" ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v4
         with:
-          path: plugin
+          # Pulls history and tags so the SDK can find your version (v1.0.0)
+          fetch-depth: 0 
+          # Pulls the actual code for the metamodule-plugin-sdk folder
+          submodules: recursive 
 
-      - name: Install build tools
+      - name: Install Build Tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake ninja-build git
+          sudo apt-get install -y ninja-build cmake
 
-      - name: Install ARM toolchain v12
+      - name: Download ARM GNU Toolchain
         run: |
-          wget -q https://developer.arm.com/-/media/Files/downloads/gnu/12.3.rel1/binrel/arm-gnu-toolchain-12.3.rel1-x86_64-arm-none-eabi.tar.xz
-          tar xf arm-gnu-toolchain-12.3.rel1-x86_64-arm-none-eabi.tar.xz
-          echo "${{ github.workspace }}/arm-gnu-toolchain-12.3.rel1-x86_64-arm-none-eabi/bin" >> $GITHUB_PATH
+          wget https://developer.arm.com/-/media/Files/downloads/gnu/12.3.rel1/binrel/arm-gnu-toolchain-12.3.rel1-x86_64-arm-none-eabi.tar.xz
+          tar -xf arm-gnu-toolchain-12.3.rel1-x86_64-arm-none-eabi.tar.xz
 
-      - name: Verify toolchain
-        run: arm-none-eabi-gcc --version
-
-      - name: Fetch SDK
+      - name: Configure CMake
         run: |
-          git clone --depth=1 --recurse-submodules \
-            https://github.com/4ms/metamodule-plugin-sdk.git \
-            metamodule-plugin-sdk
-
-      - name: Create assets dir
-        run: mkdir -p plugin/assets
-
-      - name: Configure
-        run: |
+          # We point to the specific toolchain file inside the SDK
           cmake --fresh -B build -G Ninja \
-            -DMETAMODULE_SDK_DIR=${{ github.workspace }}/metamodule-plugin-sdk \
-            -S plugin
+          -DCMAKE_TOOLCHAIN_FILE=metamodule-plugin-sdk/toolchain-arm-none-eabi.cmake \
+          -DTOOLCHAIN_BASE_DIR=${{ github.workspace }}/arm-gnu-toolchain-12.3.rel1-x86_64-arm-none-eabi
 
-      - name: Build
+      - name: Build Plugin
         run: cmake --build build
 
-      - name: Upload artifact
+      - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: RytmCC-mmplugin
-          path: plugin/metamodule-plugins/
-          retention-days: 30
+          name: rytm-cc-plugin
+          path: build/*.mmplugin
