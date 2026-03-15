@@ -33,18 +33,16 @@ jobs:
             https://github.com/4ms/metamodule-plugin-sdk.git \
             metamodule-plugin-sdk
 
-      - name: Inspect SDK headers
+      - name: Inspect SDK headers 2
         run: |
-          echo "=== CoreProcessor.hh ===" 
-          cat metamodule-plugin-sdk/core-interface/CoreModules/CoreProcessor.hh
-          echo "=== register_module.hh ===" 
+          echo "=== element_info_view.hh ===" 
+          cat metamodule-plugin-sdk/core-interface/CoreModules/elements/element_info_view.hh
+          echo "=== base_element.hh first 80 ===" 
+          head -80 metamodule-plugin-sdk/core-interface/CoreModules/elements/base_element.hh
+          echo "=== register_module.hh full ===" 
           cat metamodule-plugin-sdk/core-interface/CoreModules/register_module.hh
-          echo "=== elements.hh ===" 
-          cat metamodule-plugin-sdk/core-interface/CoreModules/elements/elements.hh | head -80
-          echo "=== ModuleInfoView ===" 
-          grep -r "ModuleInfoView" metamodule-plugin-sdk/core-interface/ | head -20
-          echo "=== Knob struct ===" 
-          grep -r "struct Knob" metamodule-plugin-sdk/core-interface/ -A 10 | head -40
+          echo "=== midi headers ===" 
+          find metamodule-plugin-sdk -name "*.hh" -o -name "*.h" | xargs grep -l -i "midi" 2>/dev/null
 
       - name: Create empty assets dir
         run: mkdir -p assets
