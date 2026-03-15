@@ -1,15 +1,7 @@
 {
-  "slug": "RytmCC",
-  "name": "Rytm CC Controller",
+  "slug": "rytm-cc",
+  "name": "Rytm CC",
   "version": "1.0.0",
-  "brand": "RytmCC",
-  "author": "you",
-  "modules": [
-    {
-      "slug": "RytmCC",
-      "name": "Rytm CC",
-      "description": "6-knob MIDI CC controller for Elektron Analog Rytm MkII",
-      "tags": ["MIDI"]
-    }
-  ]
+  "brand": "Grandsummoner",
+  "author": "Grandsummoner"
 }
