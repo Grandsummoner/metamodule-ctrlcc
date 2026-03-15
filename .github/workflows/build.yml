@@ -12,26 +12,32 @@ jobs:
       - name: 1. Checkout
         uses: actions/checkout@v4
 
-      - name: 2. Setup Tools and SDK
+      - name: 2. Setup 4ms SDK and ARM Toolchain
         run: |
           sudo apt-get update && sudo apt-get install -y ninja-build cmake wget
-          git clone --depth 1 https://github.com/4ms/metamodule-plugin-sdk.git ${{ github.workspace }}/metamodule-plugin-sdk
+          
+          # Clone SDK into the project folder
+          git clone --depth 1 https://github.com/4ms/metamodule-plugin-sdk.git metamodule-plugin-sdk
+          
+          # Download ARM Toolchain 12.3.rel1
           wget https://developer.arm.com/-/media/Files/downloads/gnu/12.3.rel1/binrel/arm-gnu-toolchain-12.3.rel1-x86_64-arm-none-eabi.tar.xz
           tar -xf arm-gnu-toolchain-12.3.rel1-x86_64-arm-none-eabi.tar.xz
 
       - name: 3. Configure and Build
         run: |
-          # Delete any old failed attempts
-          rm -rf build
+          # Define absolute paths
+          export SDK_ROOT=${{ github.workspace }}/metamodule-plugin-sdk
+          export TOOLCHAIN_ROOT=${{ github.workspace }}/arm-gnu-toolchain-12.3.rel1-x86_64-arm-none-eabi
           
-          cmake -B build -G Ninja \
-          -DCMAKE_MAKE_PROGRAM=/usr/bin/ninja \
-          -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/metamodule-plugin-sdk/toolchain-arm-none-eabi.cmake \
-          -DTOOLCHAIN_BASE_DIR=${{ github.workspace }}/arm-gnu-toolchain-12.3.rel1-x86_64-arm-none-eabi
+          # Use --fresh to clear the broken cache from build #55
+          cmake --fresh -G Ninja -B build \
+          -DCMAKE_TOOLCHAIN_FILE=$SDK_ROOT/toolchain-arm-none-eabi.cmake \
+          -DTOOLCHAIN_BASE_DIR=$TOOLCHAIN_ROOT \
+          -DMETAMODULE_SDK_DIR=$SDK_ROOT
           
           cmake --build build
 
-      - name: 4. Upload
+      - name: 4. Archive Artifact
         uses: actions/upload-artifact@v4
         with:
           name: RytmCC-Plugin
