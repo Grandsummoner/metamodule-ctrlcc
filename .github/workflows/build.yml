@@ -12,17 +12,24 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
-      - name: Install ARM toolchain
+      - name: Install ARM toolchain and build tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y gcc-arm-none-eabi cmake ninja-build
+          sudo apt-get install -y gcc-arm-none-eabi cmake ninja-build git
+
+      - name: Fetch MetaModule Plugin SDK
+        run: |
+          git clone --depth=1 https://github.com/4ms/metamodule-plugin-sdk.git
 
       - name: Configure
         run: |
           cmake -B build -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_TOOLCHAIN_FILE=metamodule-plugin-sdk/cmake/arm-none-eabi.cmake
+            -DMETAMODULE_PLUGIN_SDK_DIR=${{ github.workspace }}/metamodule-plugin-sdk \
+            -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/metamodule-plugin-sdk/cmake/arm-none-eabi.cmake
 
       - name: Build
         run: cmake --build build
@@ -30,7 +37,6 @@ jobs:
       - name: Package plugin
         run: |
           mkdir -p dist
-          cp build/RytmCC.mmplugin dist/ 2>/dev/null || \
           find build -name "*.mmplugin" -exec cp {} dist/ \;
 
       - name: Upload artifact
