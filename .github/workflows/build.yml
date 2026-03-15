@@ -12,23 +12,33 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          path: plugin
 
-      - name: Install ARM toolchain and build tools
+      - name: Install tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y gcc-arm-none-eabi cmake ninja-build git python3
+          sudo apt-get install -y gcc-arm-none-eabi cmake git
+          sudo apt-get install -y ninja-build || pip install ninja
 
-      - name: Fetch MetaModule Plugin SDK
+      - name: Verify tools
+        run: |
+          arm-none-eabi-gcc --version
+          cmake --version
+          ninja --version
+
+      - name: Fetch SDK
         run: |
           git clone --depth=1 --recurse-submodules \
             https://github.com/4ms/metamodule-plugin-sdk.git \
-            ../metamodule-plugin-sdk
-
-      - name: Create assets dir
-        run: mkdir -p assets
+            sdk
 
       - name: Configure
-        run: cmake --fresh -B build -G Ninja
+        run: |
+          cmake -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DMETAMODULE_PLUGIN_SDK_DIR=${{ github.workspace }}/sdk \
+            -S plugin
 
       - name: Build
         run: cmake --build build
@@ -37,5 +47,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: RytmCC-mmplugin
-          path: metamodule-plugins/
+          path: build/
           retention-days: 30
