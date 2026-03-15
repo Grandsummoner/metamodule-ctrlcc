@@ -33,6 +33,13 @@ jobs:
             https://github.com/4ms/metamodule-plugin-sdk.git \
             sdk
 
+      - name: Inspect SDK
+        run: |
+          echo "=== SDK root ===" && ls sdk/
+          echo "=== SDK cmake ===" && ls sdk/cmake/ 2>/dev/null || echo "no cmake dir"
+          echo "=== Looking for plugin.cmake ===" && find sdk -name "plugin.cmake" 2>/dev/null
+          echo "=== Looking for toolchain ===" && find sdk -name "*.cmake" | head -20
+
       - name: Configure
         run: |
           cmake -B build -G Ninja \
