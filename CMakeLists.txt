@@ -1,9 +1,8 @@
 cmake_minimum_required(VERSION 3.22)
-
 project(metamodule-rytm-cc VERSION 1.0.0 LANGUAGES C CXX ASM)
 
-# Must match the 'sdk' folder name in build.yml
-include(sdk/plugin.cmake)
+# This must match the folder name in the build.yml above
+include(metamodule-plugin-sdk/plugin.cmake)
 
 add_library(rytm_cc_lib STATIC 
     src/plugin.cpp 
