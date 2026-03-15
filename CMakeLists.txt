@@ -15,10 +15,17 @@ add_library(RytmCC STATIC src/RytmCC.cpp)
 
 target_include_directories(RytmCC PRIVATE src)
 
+set(PLUGIN_JSON_PATH ${CMAKE_SOURCE_DIR}/plugin.json)
+message("PLUGIN_JSON_PATH: ${PLUGIN_JSON_PATH}")
+
+if(NOT EXISTS ${PLUGIN_JSON_PATH})
+    message(FATAL_ERROR "plugin.json not found at: ${PLUGIN_JSON_PATH}")
+endif()
+
 create_plugin(
     SOURCE_LIB      RytmCC
     PLUGIN_NAME     RytmCC
-    PLUGIN_JSON     ${CMAKE_CURRENT_LIST_DIR}/plugin.json
-    SOURCE_ASSETS   ${CMAKE_CURRENT_LIST_DIR}/assets
-    DESTINATION     ${CMAKE_CURRENT_LIST_DIR}/metamodule-plugins/RytmCC
+    PLUGIN_JSON     ${PLUGIN_JSON_PATH}
+    SOURCE_ASSETS   ${CMAKE_SOURCE_DIR}/assets
+    DESTINATION     ${CMAKE_SOURCE_DIR}/metamodule-plugins/RytmCC
 )
