@@ -77,27 +77,16 @@ struct Info : MetaModule::ModuleInfoBase {
     static constexpr std::string_view png_filename = "RytmCC/RytmCC.png";
     static constexpr std::string_view svg_filename = "";
 
-    // PNG is 150x240, panel is 81.28mm x 128.5mm (16HP)
-    // mm/px: x=0.5419, y=0.5354
-    // Circle centres in SVG: cx=25,75,125 cy=105,175
-    // Shifted right +5mm, down +3mm from calculated positions
-    // K1: 25*0.5419+5=18.55, 105*0.5354+3=59.22
-    // K2: 75*0.5419+5=45.64, cy same
-    // K3: 125*0.5419+5=72.74
-    // K4-K6: same x, 175*0.5354+3=96.70
-    // KnobSize: 40px*0.5419=21.68mm
-    // Display: well within bounds, x=4 y=12 w=55 h=9
-
-    static constexpr float KnobSize = 21.68f;
+    static constexpr float KnobSize = 21.13f;
 
     static constexpr std::array<MetaModule::Element, 8> Elements {{
-        makeKnob   (18.55f, 59.22f, KnobSize, "K1", "Knob 1 Red"),
-        makeKnob   (45.64f, 59.22f, KnobSize, "K2", "Knob 2 Orange"),
-        makeKnob   (72.74f, 59.22f, KnobSize, "K3", "Knob 3 Yellow"),
-        makeKnob   (18.55f, 96.70f, KnobSize, "K4", "Knob 4 Green"),
-        makeKnob   (45.64f, 96.70f, KnobSize, "K5", "Knob 5 Blue"),
-        makeKnob   (72.74f, 96.70f, KnobSize, "K6", "Knob 6 Purple"),
-        makeDisplay( 4.00f, 12.00f, 55.00f,  9.00f, "Display"),
+        makeKnob   (13.28f, 54.34f, KnobSize, "K1", "Knob 1 Red"),
+        makeKnob   (40.37f, 54.34f, KnobSize, "K2", "Knob 2 Orange"),
+        makeKnob   (67.46f, 54.34f, KnobSize, "K3", "Knob 3 Yellow"),
+        makeKnob   (13.28f, 93.43f, KnobSize, "K4", "Knob 4 Green"),
+        makeKnob   (40.37f, 93.43f, KnobSize, "K5", "Knob 5 Blue"),
+        makeKnob   (67.46f, 93.43f, KnobSize, "K6", "Knob 6 Purple"),
+        makeDisplay( 9.21f, 11.78f, 66.65f, 13.92f, "Display"),
         makeAltAction("Set", "Next Set"),
     }};
 
