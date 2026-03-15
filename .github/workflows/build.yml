@@ -16,7 +16,7 @@ jobs:
       - name: Install ARM toolchain
         run: |
           sudo apt-get update
-          sudo apt-get install -y gcc-arm-none-eabi g++-arm-none-eabi cmake ninja-build
+          sudo apt-get install -y gcc-arm-none-eabi cmake ninja-build
 
       - name: Configure
         run: |
