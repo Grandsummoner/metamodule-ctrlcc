@@ -15,8 +15,10 @@ jobs:
       - name: 2. Setup Tools and SDK
         run: |
           sudo apt-get update
-          sudo apt-get install -y ninja-build cmake
-          git clone https://github.com/4ms/metamodule-plugin-sdk.git metamodule-plugin-sdk
+          sudo apt-get install -y ninja-build cmake wget
+          # Force clone into a fresh folder
+          rm -rf sdk
+          git clone --depth 1 https://github.com/4ms/metamodule-plugin-sdk.git sdk
           
           # Download and unpack compiler
           wget https://developer.arm.com/-/media/Files/downloads/gnu/12.3.rel1/binrel/arm-gnu-toolchain-12.3.rel1-x86_64-arm-none-eabi.tar.xz
@@ -24,13 +26,16 @@ jobs:
 
       - name: 3. Configure and Build
         run: |
-          # We use /usr/bin/ninja to force the runner to find the tool
-          /usr/bin/cmake -B build -G Ninja \
+          # Automatically find the toolchain file path
+          TOOLCHAIN_PATH=$(find $GITHUB_WORKSPACE/sdk -name "toolchain-arm-none-eabi.cmake")
+          echo "Found Toolchain at: $TOOLCHAIN_PATH"
+          
+          cmake -B build -G Ninja \
           -DCMAKE_MAKE_PROGRAM=/usr/bin/ninja \
-          -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/metamodule-plugin-sdk/toolchain-arm-none-eabi.cmake \
+          -DCMAKE_TOOLCHAIN_FILE=$TOOLCHAIN_PATH \
           -DTOOLCHAIN_BASE_DIR=${{ github.workspace }}/arm-gnu-toolchain-12.3.rel1-x86_64-arm-none-eabi
           
-          /usr/bin/cmake --build build
+          cmake --build build
 
       - name: 4. Upload
         uses: actions/upload-artifact@v4
