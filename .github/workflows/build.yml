@@ -24,27 +24,11 @@ jobs:
           tar xf arm-gnu-toolchain-12.3.rel1-x86_64-arm-none-eabi.tar.xz
           echo "${{ github.workspace }}/arm-gnu-toolchain-12.3.rel1-x86_64-arm-none-eabi/bin" >> $GITHUB_PATH
 
-      - name: Verify toolchain
-        run: arm-none-eabi-gcc --version
-
       - name: Fetch MetaModule Plugin SDK
         run: |
           git clone --depth=1 --recurse-submodules \
             https://github.com/4ms/metamodule-plugin-sdk.git \
             metamodule-plugin-sdk
-
-      - name: Inspect rack midi
-        run: |
-          echo "=== rack-interface midi headers ===" 
-          find metamodule-plugin-sdk/rack-interface -name "*.hpp" | xargs grep -l -i "midi" 2>/dev/null
-          echo "=== midi.hpp ===" 
-          cat metamodule-plugin-sdk/rack-interface/include/midi.hpp 2>/dev/null || echo "NOT FOUND"
-          echo "=== core-interface files with send ===" 
-          find metamodule-plugin-sdk/core-interface -name "*.hh" | xargs grep -l "send" 2>/dev/null
-          echo "=== coreprocessor.md ===" 
-          cat metamodule-plugin-sdk/docs/coreprocessor.md 2>/dev/null | head -100 || echo "NOT FOUND"
-          echo "=== system-api.md ===" 
-          cat metamodule-plugin-sdk/docs/system-api.md 2>/dev/null | head -100 || echo "NOT FOUND"
 
       - name: Create empty assets dir
         run: mkdir -p assets
