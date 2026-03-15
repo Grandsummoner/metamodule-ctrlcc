@@ -13,10 +13,9 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          submodules: 'recursive' # Pulls the SDK
+          submodules: recursive
 
-      - name: Force SDK Download
-        # This is the "Safety Net" in case the checkout step misses the submodule
+      - name: Force Submodule Update
         run: |
           git submodule init
           git submodule update --remote --recursive
@@ -31,7 +30,7 @@ jobs:
           wget https://developer.arm.com/-/media/Files/downloads/gnu/12.3.rel1/binrel/arm-gnu-toolchain-12.3.rel1-x86_64-arm-none-eabi.tar.xz
           tar -xf arm-gnu-toolchain-12.3.rel1-x86_64-arm-none-eabi.tar.xz
 
-      - name: Configure
+      - name: Configure CMake
         run: |
           cmake --fresh -B build -G Ninja \
           -DCMAKE_TOOLCHAIN_FILE=metamodule-plugin-sdk/toolchain-arm-none-eabi.cmake \
