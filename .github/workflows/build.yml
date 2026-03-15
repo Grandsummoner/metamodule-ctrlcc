@@ -33,6 +33,13 @@ jobs:
             https://github.com/4ms/metamodule-plugin-sdk.git \
             metamodule-plugin-sdk
 
+      - name: Inspect plugin.cmake
+        run: |
+          echo "=== plugin.cmake lines 25-40 ===" 
+          sed -n '25,40p' metamodule-plugin-sdk/plugin.cmake
+          echo "=== plugin-mm.json in repo ==="
+          cat plugin-mm.json 2>/dev/null || echo "NOT FOUND"
+
       - name: Create empty assets dir
         run: mkdir -p assets
 
