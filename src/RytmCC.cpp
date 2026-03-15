@@ -16,7 +16,7 @@ static constexpr int NumKnobs = 6;
 static constexpr int NumSets  = 4;
 
 static constexpr uint8_t DefaultCC[NumSets][NumKnobs] = {
-    {35, 36, 37, 39, 40, 41},
+    {7,  36, 37, 39, 40, 41},
     {42, 43, 44, 45, 46, 47},
     {74, 75, 70, 71, 78, 80},
     {7,  10, 82, 83, 102, 109},
@@ -79,14 +79,16 @@ struct Info : MetaModule::ModuleInfoBase {
 
     static constexpr float KnobSize = 21.13f;
 
+    // Knobs: -2mm X, +2mm Y from last position (13.28, 54.34) and (93.43)
+    // Display: moved right and down to sit inside dark box
     static constexpr std::array<MetaModule::Element, 8> Elements {{
-        makeKnob   (13.28f, 54.34f, KnobSize, "K1", "Knob 1 Red"),
-        makeKnob   (40.37f, 54.34f, KnobSize, "K2", "Knob 2 Orange"),
-        makeKnob   (67.46f, 54.34f, KnobSize, "K3", "Knob 3 Yellow"),
-        makeKnob   (13.28f, 93.43f, KnobSize, "K4", "Knob 4 Green"),
-        makeKnob   (40.37f, 93.43f, KnobSize, "K5", "Knob 5 Blue"),
-        makeKnob   (67.46f, 93.43f, KnobSize, "K6", "Knob 6 Purple"),
-        makeDisplay( 9.21f, 11.78f, 66.65f, 13.92f, "Display"),
+        makeKnob   (11.28f, 56.34f, KnobSize, "K1", "Knob 1 Red"),
+        makeKnob   (38.37f, 56.34f, KnobSize, "K2", "Knob 2 Orange"),
+        makeKnob   (65.46f, 56.34f, KnobSize, "K3", "Knob 3 Yellow"),
+        makeKnob   (11.28f, 95.43f, KnobSize, "K4", "Knob 4 Green"),
+        makeKnob   (38.37f, 95.43f, KnobSize, "K5", "Knob 5 Blue"),
+        makeKnob   (65.46f, 95.43f, KnobSize, "K6", "Knob 6 Purple"),
+        makeDisplay(20.00f, 22.00f, 40.00f,  9.00f, "Display"),
         makeAltAction("Set", "Next Set"),
     }};
 
