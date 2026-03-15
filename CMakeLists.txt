@@ -1,22 +1,16 @@
 cmake_minimum_required(VERSION 3.22)
 
-# We must set the SDK directory BEFORE the project() call for some SDK versions
-set(METAMODULE_SDK_DIR "${CMAKE_CURRENT_SOURCE_DIR}/metamodule-plugin-sdk")
+include(${CMAKE_CURRENT_LIST_DIR}/../metamodule-plugin-sdk/plugin.cmake)
 
-# The project line—ensure LANGUAGES includes ASM as required by 4ms
-project(metamodule-rytm-cc VERSION 1.0.0 LANGUAGES C CXX ASM)
+project(RytmCC VERSION 1.0.0 DESCRIPTION "Rytm CC Controller" LANGUAGES C CXX ASM)
 
-# Use the absolute path to include the SDK logic
-include("${METAMODULE_SDK_DIR}/plugin.cmake")
+add_library(RytmCC STATIC src/RytmCC.cpp)
 
-add_library(rytm_cc_lib STATIC 
-    src/plugin.cpp 
-    src/RytmCC.cpp
-)
-
-target_include_directories(rytm_cc_lib PRIVATE src)
+target_include_directories(RytmCC PRIVATE src)
 
 create_plugin(
-    SOURCE_LIB rytm_cc_lib
-    PLUGIN_NAME "RytmCC"
+    SOURCE_LIB      RytmCC
+    PLUGIN_NAME     RytmCC
+    SOURCE_ASSETS   ${CMAKE_CURRENT_LIST_DIR}/assets
+    DESTINATION     ${CMAKE_CURRENT_LIST_DIR}/metamodule-plugins
 )
