@@ -31,14 +31,15 @@ jobs:
         run: |
           git clone --depth=1 --recurse-submodules \
             https://github.com/4ms/metamodule-plugin-sdk.git \
-            ../metamodule-plugin-sdk
+            metamodule-plugin-sdk
 
       - name: Create empty assets dir
         run: mkdir -p assets
 
       - name: Configure
         run: |
-          cmake --fresh -B build -G Ninja
+          cmake --fresh -B build -G Ninja \
+            -DMETAMODULE_SDK_DIR=${{ github.workspace }}/metamodule-plugin-sdk
 
       - name: Build
         run: cmake --build build
