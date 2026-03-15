@@ -1,16 +1,19 @@
 cmake_minimum_required(VERSION 3.22)
 
-include(${CMAKE_CURRENT_LIST_DIR}/../metamodule-plugin-sdk/plugin.cmake)
+# Fixes the 'string REPLACE' error by providing version info first
+project(metamodule-rytm-cc VERSION 1.0.0 LANGUAGES C CXX ASM)
 
-project(RytmCC VERSION 1.0.0 DESCRIPTION "Rytm CC Controller" LANGUAGES C CXX ASM)
+# Include the MetaModule SDK
+include(metamodule-plugin-sdk/plugin.cmake)
 
-add_library(RytmCC STATIC src/RytmCC.cpp)
+# List all your source files here
+add_library(rytm_cc_lib STATIC 
+    src/plugin.cpp 
+    src/RytmCC.cpp
+)
 
-target_include_directories(RytmCC PRIVATE src)
-
+# Finalize the plugin
 create_plugin(
-    SOURCE_LIB    RytmCC
-    PLUGIN_NAME   RytmCC
-    SOURCE_ASSETS ${CMAKE_CURRENT_LIST_DIR}/assets
-    DESTINATION   ${CMAKE_CURRENT_LIST_DIR}/metamodule-plugins
+    SOURCE_LIB rytm_cc_lib
+    PLUGIN_NAME "RytmCC"
 )
