@@ -1,50 +1,62 @@
 #include "CoreModules/CoreProcessor.hh"
 #include "CoreModules/register_module.hh"
 #include "CoreModules/elements/elements.hh"
-#include "CoreModules/elements/base_element.hh"
-
-// Rack MIDI output via adaptor layer
+#include "CoreModules/elements/element_counter.hh"
+#include "CoreModules/elements/element_info.hh"
 #include "midi.hpp"
 
 #include <array>
 #include <memory>
 #include <string_view>
 #include <cstdint>
-#include <cstring>
 
-// ---- Constants ----
+// ============================================================
+// Constants
+// ============================================================
 static constexpr int NumKnobs = 6;
 static constexpr int NumSets  = 4;
 
 static constexpr uint8_t DefaultCC[NumSets][NumKnobs] = {
-    {35, 36, 37, 39, 40, 41},   // Set 1: Perf 1-6
-    {42, 43, 44, 45, 46, 47},   // Set 2: Perf 7-12
-    {74, 75, 70, 71, 78, 80},   // Set 3: Filter + Amp
-    {7,  10, 82, 83, 102, 109}  // Set 4: Vol, Pan, Sends, LFO
+    {35, 36, 37, 39, 40, 41},    // Set 1: Perf 1-6
+    {42, 43, 44, 45, 46, 47},    // Set 2: Perf 7-12
+    {74, 75, 70, 71, 78, 80},    // Set 3: Filter + Amp
+    {7,  10, 82, 83, 102, 109},  // Set 4: Vol, Pan, Sends, LFO
 };
 
-enum ParamIDs {
-    Knob1=0, Knob2, Knob3, Knob4, Knob5, Knob6,
-    SetBtn,
-    NumParams
+// ============================================================
+// Module info struct — the SDK template approach
+// ============================================================
+namespace RytmCC {
+
+struct Info : MetaModule::ModuleInfoBase {
+    static constexpr std::string_view slug        = "RytmCC";
+    static constexpr std::string_view description = "6-knob MIDI CC for Elektron Analog Rytm MkII";
+    static constexpr uint32_t         width_hp    = 8;
+    static constexpr std::string_view png_filename = "RytmCC/RytmCC.png";
+    static constexpr std::string_view svg_filename = "";
+
+    static constexpr std::array<MetaModule::Element, 7> Elements = {{
+        // Row 1: Knobs 1-3 (Red, Orange, Yellow)
+        MetaModule::Knob{{ .x_mm=13.f, .y_mm=50.f, .short_name="K1", .long_name="Knob 1" }},
+        MetaModule::Knob{{ .x_mm=30.f, .y_mm=50.f, .short_name="K2", .long_name="Knob 2" }},
+        MetaModule::Knob{{ .x_mm=47.f, .y_mm=50.f, .short_name="K3", .long_name="Knob 3" }},
+        // Row 2: Knobs 4-6 (Green, Blue, Purple)
+        MetaModule::Knob{{ .x_mm=13.f, .y_mm=76.f, .short_name="K4", .long_name="Knob 4" }},
+        MetaModule::Knob{{ .x_mm=30.f, .y_mm=76.f, .short_name="K5", .long_name="Knob 5" }},
+        MetaModule::Knob{{ .x_mm=47.f, .y_mm=76.f, .short_name="K6", .long_name="Knob 6" }},
+        // Set button
+        MetaModule::MomentaryButton{{ .x_mm=30.f, .y_mm=100.f, .short_name="Set", .long_name="Next Set" }},
+    }};
+
+    enum Params { K1, K2, K3, K4, K5, K6, SetBtn };
 };
 
-// ---- Static string storage ----
-// String views in elements must point to static storage
-static const char* sKnobNames[NumKnobs] = {
-    "K1 Red", "K2 Orange", "K3 Yellow",
-    "K4 Green", "K5 Blue", "K6 Purple"
-};
-static const char* sSetBtn = "Next Set";
-static const char* sBrand  = "RytmCC";
-static const char* sSlug   = "RytmCC";
-static const char* sDesc   = "6-knob MIDI CC for Elektron Analog Rytm MkII";
-static const char* sFace   = "RytmCC/RytmCC.png";
-
-// ---- Module ----
-class RytmCCModule : public CoreProcessor {
+// ============================================================
+// Module processor
+// ============================================================
+class Module : public CoreProcessor {
 public:
-    RytmCCModule() {
+    Module() {
         for (int s = 0; s < NumSets; s++)
             for (int k = 0; k < NumKnobs; k++)
                 cc[s][k] = DefaultCC[s][k];
@@ -52,30 +64,27 @@ public:
             lastVal[k] = -1.f;
     }
 
-    void set_samplerate(float sr) override { (void)sr; }
+    void set_samplerate(float) override {}
 
     void update() override {
-        // Set button — rising edge cycles through sets
-        float btnNow = params[SetBtn];
-        if (btnNow > 0.5f && lastBtn <= 0.5f) {
+        // Set button: rising edge cycles active set
+        float btn = params[Info::SetBtn];
+        if (btn > 0.5f && lastBtn <= 0.5f) {
             activeSet = (activeSet + 1) % NumSets;
             for (int k = 0; k < NumKnobs; k++)
-                lastVal[k] = -1.f; // force resend
+                lastVal[k] = -1.f;
         }
-        lastBtn = btnNow;
+        lastBtn = btn;
 
-        // Send MIDI CC for any changed knob
+        // Send MIDI CC for any knob that changed
         for (int k = 0; k < NumKnobs; k++) {
-            float v = params[Knob1 + k];
+            float v = params[k];
             if (v != lastVal[k]) {
                 lastVal[k] = v;
                 uint8_t midiVal = static_cast<uint8_t>(v * 127.f);
-                uint8_t ccNum   = cc[activeSet][k];
-
                 rack::midi::Message msg;
-                msg.setSize(3);
-                msg.bytes[0] = 0xB0; // CC ch1
-                msg.bytes[1] = ccNum & 0x7F;
+                msg.bytes[0] = 0xB0; // CC on channel 1
+                msg.bytes[1] = cc[activeSet][k] & 0x7F;
                 msg.bytes[2] = midiVal & 0x7F;
                 midiOut.sendMessage(msg);
             }
@@ -83,11 +92,11 @@ public:
     }
 
     void set_param(int id, float val) override {
-        if (id >= 0 && id < NumParams) params[id] = val;
+        if (id >= 0 && id < 7) params[id] = val;
     }
 
     float get_param(int id) const override {
-        if (id >= 0 && id < NumParams) return params[id];
+        if (id >= 0 && id < 7) return params[id];
         return 0.f;
     }
 
@@ -95,20 +104,17 @@ public:
     float get_output(int) const override { return 0.f; }
 
     std::string save_state() override {
-        char buf[4];
-        buf[0] = '0' + activeSet;
-        buf[1] = 0;
-        return std::string(buf);
+        return std::string(1, '0' + activeSet);
     }
 
     void load_state(std::string_view sv) override {
-        if (!sv.empty() && sv[0] >= '0' && sv[0] <= '3')
+        if (!sv.empty() && sv[0] >= '0' && sv[0] < '0' + NumSets)
             activeSet = sv[0] - '0';
         for (int k = 0; k < NumKnobs; k++) lastVal[k] = -1.f;
     }
 
 private:
-    float params[NumParams]    = {};
+    float params[7]            = {};
     float lastVal[NumKnobs]    = {};
     float lastBtn              = 0.f;
     int   activeSet            = 0;
@@ -116,51 +122,11 @@ private:
     rack::midi::Output midiOut;
 };
 
-// ---- Static element storage ----
-static std::array<MetaModule::Element, NumParams> elements;
-static std::array<MetaModule::ElementCount::Indices, NumParams> indices;
+} // namespace RytmCC
 
-static void setupElements() {
-    float colX[3] = {13.f, 30.f, 47.f};
-    float rowY[2] = {50.f, 76.f};
-
-    for (int k = 0; k < NumKnobs; k++) {
-        MetaModule::Knob knob;
-        knob.x_mm       = colX[k % 3];
-        knob.y_mm       = rowY[k / 3];
-        knob.short_name = sKnobNames[k];
-        knob.long_name  = sKnobNames[k];
-        elements[k]     = knob;
-        indices[k]      = {.param_idx = static_cast<uint16_t>(k)};
-    }
-
-    MetaModule::MomentaryButton btn;
-    btn.x_mm       = 30.f;
-    btn.y_mm       = 100.f;
-    btn.short_name = sSetBtn;
-    btn.long_name  = sSetBtn;
-    elements[SetBtn] = btn;
-    indices[SetBtn]  = {.param_idx = static_cast<uint16_t>(SetBtn)};
-}
-
-// ---- Static module info storage ----
-static MetaModule::ModuleInfoView moduleInfo;
-
+// ============================================================
+// Plugin entry point
+// ============================================================
 extern "C" void init() {
-    setupElements();
-
-    moduleInfo.elements    = elements;
-    moduleInfo.indices     = indices;
-    moduleInfo.description = sDesc;
-    moduleInfo.width_hp    = 8;
-
-    register_module(
-        sSlug,
-        sBrand,
-        []() -> std::unique_ptr<CoreProcessor> {
-            return std::make_unique<RytmCCModule>();
-        },
-        moduleInfo,
-        sFace
-    );
+    MetaModule::register_module<RytmCC::Module, RytmCC::Info>("RytmCC");
 }
