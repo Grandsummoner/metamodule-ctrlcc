@@ -77,19 +77,16 @@ struct Info : MetaModule::ModuleInfoBase {
     static constexpr std::string_view png_filename = "RytmCC/RytmCC.png";
     static constexpr std::string_view svg_filename = "";
 
-    // Circle diameter in mm = 22px * (81.28mm / 200px) = 8.94mm radius = 17.88mm diameter
     static constexpr float KnobSize = 17.88f;
 
-    // Display: 184px wide * (81.28/200) = 74.8mm, 24px tall * (128.5/240) = 12.85mm
-    // Display top-left at px(8,24) = mm(3.25, 12.85)
     static constexpr std::array<MetaModule::Element, 8> Elements {{
-        makeKnob   (13.8f, 56.2f, KnobSize, "K1", "Knob 1 Red"),
-        makeKnob   (40.6f, 56.2f, KnobSize, "K2", "Knob 2 Orange"),
-        makeKnob   (67.5f, 56.2f, KnobSize, "K3", "Knob 3 Yellow"),
-        makeKnob   (13.8f, 95.3f, KnobSize, "K4", "Knob 4 Green"),
-        makeKnob   (40.6f, 95.3f, KnobSize, "K5", "Knob 5 Blue"),
-        makeKnob   (67.5f, 95.3f, KnobSize, "K6", "Knob 6 Purple"),
-        makeDisplay( 3.25f, 12.85f, 74.8f, 12.85f, "Display"),
+        makeKnob   (13.41f, 56.22f, KnobSize, "K1", "Knob 1 Red"),
+        makeKnob   (40.23f, 56.22f, KnobSize, "K2", "Knob 2 Orange"),
+        makeKnob   (67.06f, 56.22f, KnobSize, "K3", "Knob 3 Yellow"),
+        makeKnob   (13.41f, 93.70f, KnobSize, "K4", "Knob 4 Green"),
+        makeKnob   (40.23f, 93.70f, KnobSize, "K5", "Knob 5 Blue"),
+        makeKnob   (67.06f, 93.70f, KnobSize, "K6", "Knob 6 Purple"),
+        makeDisplay( 4.06f, 13.39f, 72.75f, 18.74f, "Display"),
         makeAltAction("Set", "Next Set — cycles knob set"),
     }};
 
@@ -136,12 +133,10 @@ public:
         }
     }
 
-    // AltParamAction — called when user selects "Next Set" from menu
     void set_param(int id, float val) override {
         if (id >= 0 && id < Info::NumParams) {
             params[id] = val;
         } else if (id == Info::NumParams) {
-            // SetBtn action — cycle set
             if (val > 0.5f) {
                 activeSet = (activeSet + 1) % NumSets;
                 for (int k = 0; k < NumKnobs; k++) lastVal[k] = -1.f;
