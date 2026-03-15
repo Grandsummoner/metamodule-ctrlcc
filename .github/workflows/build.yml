@@ -16,19 +16,29 @@ jobs:
         run: |
           sudo apt-get update && sudo apt-get install -y ninja-build cmake wget
           
-          # We force the clone into the EXACT directory CMake is complaining about
-          git clone --depth 1 https://github.com/4ms/metamodule-plugin-sdk.git ${{ github.workspace }}/metamodule-plugin-sdk
+          # Clone SDK
+          git clone --depth 1 https://github.com/4ms/metamodule-plugin-sdk.git metamodule-plugin-sdk
           
-          # Download and unpack ARM compiler
+          # Download ARM Compiler
           wget https://developer.arm.com/-/media/Files/downloads/gnu/12.3.rel1/binrel/arm-gnu-toolchain-12.3.rel1-x86_64-arm-none-eabi.tar.xz
+          
+          # Force extraction and WAIT
           tar -xf arm-gnu-toolchain-12.3.rel1-x86_64-arm-none-eabi.tar.xz
+          
+          # Verification: This will fail the build here if the folders are missing
+          ls -d metamodule-plugin-sdk
+          ls -d arm-gnu-toolchain-12.3.rel1-x86_64-arm-none-eabi
 
       - name: 3. Configure and Build
         run: |
+          # Use absolute path to the workspace
+          export SDK_PATH=${{ github.workspace }}/metamodule-plugin-sdk
+          export TOOLCHAIN_PATH=${{ github.workspace }}/arm-gnu-toolchain-12.3.rel1-x86_64-arm-none-eabi
+          
           cmake -B build -G Ninja \
           -DCMAKE_MAKE_PROGRAM=/usr/bin/ninja \
-          -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/metamodule-plugin-sdk/toolchain-arm-none-eabi.cmake \
-          -DTOOLCHAIN_BASE_DIR=${{ github.workspace }}/arm-gnu-toolchain-12.3.rel1-x86_64-arm-none-eabi
+          -DCMAKE_TOOLCHAIN_FILE=$SDK_PATH/toolchain-arm-none-eabi.cmake \
+          -DTOOLCHAIN_BASE_DIR=$TOOLCHAIN_PATH
           
           cmake --build build
 
