@@ -77,16 +77,16 @@ struct Info : MetaModule::ModuleInfoBase {
     static constexpr std::string_view png_filename = "RytmCC/RytmCC.png";
     static constexpr std::string_view svg_filename = "";
 
-    static constexpr float KnobSize = 17.88f;
+    static constexpr float KnobSize = 21.68f;
 
     static constexpr std::array<MetaModule::Element, 8> Elements {{
-        makeKnob   (13.41f, 56.22f, KnobSize, "K1", "Knob 1 Red"),
-        makeKnob   (40.23f, 56.22f, KnobSize, "K2", "Knob 2 Orange"),
-        makeKnob   (67.06f, 56.22f, KnobSize, "K3", "Knob 3 Yellow"),
-        makeKnob   (13.41f, 93.70f, KnobSize, "K4", "Knob 4 Green"),
-        makeKnob   (40.23f, 93.70f, KnobSize, "K5", "Knob 5 Blue"),
-        makeKnob   (67.06f, 93.70f, KnobSize, "K6", "Knob 6 Purple"),
-        makeDisplay( 4.06f, 13.39f, 72.75f, 18.74f, "Display"),
+        makeKnob   (13.55f, 56.22f, KnobSize, "K1", "Knob 1 Red"),
+        makeKnob   (40.64f, 56.22f, KnobSize, "K2", "Knob 2 Orange"),
+        makeKnob   (67.74f, 56.22f, KnobSize, "K3", "Knob 3 Yellow"),
+        makeKnob   (13.55f, 93.70f, KnobSize, "K4", "Knob 4 Green"),
+        makeKnob   (40.64f, 93.70f, KnobSize, "K5", "Knob 5 Blue"),
+        makeKnob   (67.74f, 93.70f, KnobSize, "K6", "Knob 6 Purple"),
+        makeDisplay( 3.25f, 11.78f, 74.78f, 13.92f, "Display"),
         makeAltAction("Set", "Next Set — cycles knob set"),
     }};
 
