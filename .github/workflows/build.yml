@@ -3,7 +3,7 @@ name: Build MetaModule Plugin
 on:
   push:
     branches: [ "main" ]
-    tags: [ "v*" ]
+  workflow_dispatch:
 
 jobs:
   build:
@@ -12,11 +12,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          # FIX 1: This pulls the missing 'metamodule-plugin-sdk' files
           submodules: recursive
+          fetch-depth: 0
 
-      - name: Install Tools
-        run: sudo apt-get update && sudo apt-get install -y ninja-build cmake
+      - name: Install Build Tools
+        # FIX 2: This installs 'ninja-build' so CMake can find it
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build cmake
 
       - name: Setup ARM Toolchain
         run: |
@@ -32,8 +36,8 @@ jobs:
       - name: Build
         run: cmake --build build
 
-      - name: Upload
+      - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: rytm-cc-plugin
+          name: RytmCC-Plugin
           path: build/*.mmplugin
