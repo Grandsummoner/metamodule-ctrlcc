@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.22)
 
-list(APPEND CMAKE_MODULE_PATH "${METAMODULE_PLUGIN_SDK_DIR}")
+set(METAMODULE_PLUGIN_SDK_DIR "" CACHE PATH "Path to MetaModule Plugin SDK")
 
-include(plugin)
+include(${METAMODULE_PLUGIN_SDK_DIR}/plugin.cmake)
 
 project(RytmCC VERSION 1.0.0 LANGUAGES C CXX ASM)
 
@@ -13,6 +13,6 @@ target_include_directories(RytmCC PRIVATE src)
 create_plugin(
     SOURCE_LIB    RytmCC
     PLUGIN_NAME   RytmCC
-    PLUGIN_JSON   ${CMAKE_CURRENT_LIST_DIR}/plugin.json
+    PLUGIN_JSON   ${CMAKE_CURRENT_LIST_DIR}/plugin-mm.json
     DESTINATION   ${CMAKE_BINARY_DIR}
 )
