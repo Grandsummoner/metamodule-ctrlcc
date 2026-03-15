@@ -4,43 +4,35 @@ on:
   push:
     branches: [ "main" ]
     tags: [ "v*" ]
-  pull_request:
-    branches: [ "main" ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          # Pulls history and tags so the SDK can find your version (v1.0.0)
-          fetch-depth: 0 
-          # Pulls the actual code for the metamodule-plugin-sdk folder
-          submodules: recursive 
+          fetch-depth: 0
+          submodules: recursive
 
-      - name: Install Build Tools
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y ninja-build cmake
+      - name: Install Tools
+        run: sudo apt-get update && sudo apt-get install -y ninja-build cmake
 
-      - name: Download ARM GNU Toolchain
+      - name: Setup ARM Toolchain
         run: |
           wget https://developer.arm.com/-/media/Files/downloads/gnu/12.3.rel1/binrel/arm-gnu-toolchain-12.3.rel1-x86_64-arm-none-eabi.tar.xz
           tar -xf arm-gnu-toolchain-12.3.rel1-x86_64-arm-none-eabi.tar.xz
 
-      - name: Configure CMake
+      - name: Configure
         run: |
-          # We point to the specific toolchain file inside the SDK
           cmake --fresh -B build -G Ninja \
           -DCMAKE_TOOLCHAIN_FILE=metamodule-plugin-sdk/toolchain-arm-none-eabi.cmake \
           -DTOOLCHAIN_BASE_DIR=${{ github.workspace }}/arm-gnu-toolchain-12.3.rel1-x86_64-arm-none-eabi
 
-      - name: Build Plugin
+      - name: Build
         run: cmake --build build
 
-      - name: Upload Artifact
+      - name: Upload
         uses: actions/upload-artifact@v4
         with:
           name: rytm-cc-plugin
