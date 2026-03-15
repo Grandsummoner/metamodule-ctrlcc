@@ -1,26 +1,21 @@
-cmake_minimum_required(VERSION 3.24)
-project(RytmCC)
+cmake_minimum_required(VERSION 3.22)
 
-set(METAMODULE_PLUGIN_SDK_DIR "" CACHE PATH "Path to MetaModule Plugin SDK")
+include(${CMAKE_CURRENT_LIST_DIR}/../metamodule-plugin-sdk/plugin.cmake)
 
-if(NOT METAMODULE_PLUGIN_SDK_DIR)
-    include(FetchContent)
-    FetchContent_Declare(
-        metamodule-plugin-sdk
-        GIT_REPOSITORY https://github.com/4ms/metamodule-plugin-sdk
-        GIT_TAG main
-        GIT_SHALLOW TRUE
-    )
-    FetchContent_MakeAvailable(metamodule-plugin-sdk)
-    set(METAMODULE_PLUGIN_SDK_DIR ${metamodule-plugin-sdk_SOURCE_DIR})
-endif()
+project(RytmCC VERSION 1.0.0 DESCRIPTION "Rytm CC Controller for MetaModule" LANGUAGES C CXX ASM)
 
-include(${METAMODULE_PLUGIN_SDK_DIR}/cmake/plugin.cmake)
+add_library(RytmCC STATIC)
 
-project(RytmCC VERSION 1.0.0)
+target_sources(RytmCC PRIVATE
+    src/RytmCC.cpp
+)
 
-add_plugin(
-    PLUGIN_NAME RytmCC
-    SOURCES src/RytmCC.cpp
-    DESTINATION ${CMAKE_BINARY_DIR}
+target_include_directories(RytmCC PRIVATE src)
+
+create_plugin(
+    SOURCE_LIB      RytmCC
+    PLUGIN_NAME     RytmCC
+    PLUGIN_JSON     ${CMAKE_CURRENT_LIST_DIR}/plugin.json
+    SOURCE_ASSETS   ${CMAKE_CURRENT_LIST_DIR}/assets
+    DESTINATION     ${CMAKE_CURRENT_LIST_DIR}/metamodule-plugins
 )
