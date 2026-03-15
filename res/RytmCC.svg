@@ -1,0 +1,112 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="60mm" height="128.5mm" viewBox="0 0 60 128.5">
+  <!-- Panel background -->
+  <rect width="60" height="128.5" fill="#1a1a2e"/>
+  
+  <!-- Top accent bar -->
+  <rect width="60" height="1.5" fill="#e03030"/>
+  
+  <!-- Bottom accent bar -->
+  <rect y="127" width="60" height="1.5" fill="#e03030"/>
+
+  <!-- Title -->
+  <text x="30" y="5.5" 
+    font-family="monospace" font-size="3" font-weight="bold"
+    fill="#ccccff" text-anchor="middle" letter-spacing="1">
+    RYTM CC
+  </text>
+
+  <!-- Display area background -->
+  <rect x="2" y="8" width="56" height="14" rx="2" fill="#0c0c12" stroke="#3c3c50" stroke-width="0.5"/>
+
+  <!-- SET label -->
+  <text x="5" y="28.5"
+    font-family="monospace" font-size="2.5"
+    fill="#666688" text-anchor="start">
+    SET
+  </text>
+
+  <!-- Set indicator dots -->
+  <circle cx="17" cy="27.5" r="1.2" fill="#1a1a2e" stroke="#28a050" stroke-width="0.5"/>
+  <circle cx="25" cy="27.5" r="1.2" fill="#1a1a2e" stroke="#28a050" stroke-width="0.5"/>
+  <circle cx="33" cy="27.5" r="1.2" fill="#1a1a2e" stroke="#28a050" stroke-width="0.5"/>
+  <circle cx="41" cy="27.5" r="1.2" fill="#1a1a2e" stroke="#28a050" stroke-width="0.5"/>
+
+  <!-- SET button label -->
+  <text x="50" y="28.5"
+    font-family="monospace" font-size="2.5"
+    fill="#666688" text-anchor="middle">
+    NEXT
+  </text>
+
+  <!-- Divider line -->
+  <line x1="2" y1="33" x2="58" y2="33" stroke="#2a2a40" stroke-width="0.5"/>
+
+  <!-- Row 1 knob labels -->
+  <!-- K1 Red -->
+  <circle cx="12" cy="38" r="2.5" fill="#e03030" opacity="0.8"/>
+  <text x="12" y="38.8"
+    font-family="monospace" font-size="2.2"
+    fill="#fff" text-anchor="middle">1</text>
+
+  <!-- K2 Orange -->
+  <circle cx="30" cy="38" r="2.5" fill="#e07820" opacity="0.8"/>
+  <text x="30" y="38.8"
+    font-family="monospace" font-size="2.2"
+    fill="#fff" text-anchor="middle">2</text>
+
+  <!-- K3 Yellow -->
+  <circle cx="48" cy="38" r="2.5" fill="#c8a800" opacity="0.8"/>
+  <text x="48" y="38.8"
+    font-family="monospace" font-size="2.2"
+    fill="#fff" text-anchor="middle">3</text>
+
+  <!-- Row 1 knob positions (42mm) -->
+  <!-- Knob rings -->
+  <circle cx="12" cy="42" r="6" fill="none" stroke="#e03030" stroke-width="0.8" opacity="0.6"/>
+  <circle cx="30" cy="42" r="6" fill="none" stroke="#e07820" stroke-width="0.8" opacity="0.6"/>
+  <circle cx="48" cy="42" r="6" fill="none" stroke="#c8a800" stroke-width="0.8" opacity="0.6"/>
+
+  <!-- Row 2 knob labels -->
+  <!-- K4 Green -->
+  <circle cx="12" cy="58" r="2.5" fill="#28a050" opacity="0.8"/>
+  <text x="12" y="58.8"
+    font-family="monospace" font-size="2.2"
+    fill="#fff" text-anchor="middle">4</text>
+
+  <!-- K5 Blue -->
+  <circle cx="30" cy="58" r="2.5" fill="#1878d0" opacity="0.8"/>
+  <text x="30" y="58.8"
+    font-family="monospace" font-size="2.2"
+    fill="#fff" text-anchor="middle">5</text>
+
+  <!-- K6 Purple -->
+  <circle cx="48" cy="58" r="2.5" fill="#8040c0" opacity="0.8"/>
+  <text x="48" y="58.8"
+    font-family="monospace" font-size="2.2"
+    fill="#fff" text-anchor="middle">6</text>
+
+  <!-- Row 2 knob rings -->
+  <circle cx="12" cy="62" r="6" fill="none" stroke="#28a050" stroke-width="0.8" opacity="0.6"/>
+  <circle cx="30" cy="62" r="6" fill="none" stroke="#1878d0" stroke-width="0.8" opacity="0.6"/>
+  <circle cx="48" cy="62" r="6" fill="none" stroke="#8040c0" stroke-width="0.8" opacity="0.6"/>
+
+  <!-- Divider -->
+  <line x1="2" y1="73" x2="58" y2="73" stroke="#2a2a40" stroke-width="0.5"/>
+
+  <!-- MIDI label -->
+  <text x="30" y="80"
+    font-family="monospace" font-size="2.5"
+    fill="#666688" text-anchor="middle">
+    MIDI OUT
+  </text>
+
+  <!-- MIDI port outline -->
+  <rect x="18" y="82" width="24" height="10" rx="1.5" fill="none" stroke="#3c3c50" stroke-width="0.5"/>
+
+  <!-- Bottom branding -->
+  <text x="30" y="124"
+    font-family="monospace" font-size="2"
+    fill="#333355" text-anchor="middle" letter-spacing="0.5">
+    ELEKTRON RYTM MKII
+  </text>
+</svg>
