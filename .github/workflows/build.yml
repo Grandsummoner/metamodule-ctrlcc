@@ -9,27 +9,30 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Code
+      - name: 1. Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup Tools and SDK
+      - name: 2. Setup Tools and SDK
         run: |
           sudo apt-get update && sudo apt-get install -y ninja-build cmake wget
-          # Clone into the exact folder name the SDK expects
-          git clone --depth 1 https://github.com/4ms/metamodule-plugin-sdk.git metamodule-plugin-sdk
           
+          # We force the clone into the EXACT directory CMake is complaining about
+          git clone --depth 1 https://github.com/4ms/metamodule-plugin-sdk.git ${{ github.workspace }}/metamodule-plugin-sdk
+          
+          # Download and unpack ARM compiler
           wget https://developer.arm.com/-/media/Files/downloads/gnu/12.3.rel1/binrel/arm-gnu-toolchain-12.3.rel1-x86_64-arm-none-eabi.tar.xz
           tar -xf arm-gnu-toolchain-12.3.rel1-x86_64-arm-none-eabi.tar.xz
 
-      - name: Configure and Build
+      - name: 3. Configure and Build
         run: |
           cmake -B build -G Ninja \
           -DCMAKE_MAKE_PROGRAM=/usr/bin/ninja \
           -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/metamodule-plugin-sdk/toolchain-arm-none-eabi.cmake \
           -DTOOLCHAIN_BASE_DIR=${{ github.workspace }}/arm-gnu-toolchain-12.3.rel1-x86_64-arm-none-eabi
+          
           cmake --build build
 
-      - name: Upload Plugin
+      - name: 4. Upload Plugin
         uses: actions/upload-artifact@v4
         with:
           name: RytmCC-Plugin
