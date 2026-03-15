@@ -23,8 +23,8 @@ static constexpr uint8_t DefaultCC[NumSets][NumKnobs] = {
 };
 
 static const char* KnobNames[NumKnobs] = {
-    "K1 Red", "K2 Orange", "K3 Yellow",
-    "K4 Green", "K5 Blue", "K6 Purple"
+    "K1 Red", "K2 Org", "K3 Yel",
+    "K4 Grn", "K5 Blu", "K6 Pur"
 };
 
 namespace RytmCC {
@@ -77,17 +77,28 @@ struct Info : MetaModule::ModuleInfoBase {
     static constexpr std::string_view png_filename = "RytmCC/RytmCC.png";
     static constexpr std::string_view svg_filename = "";
 
+    // PNG is 150x240, panel is 81.28mm x 128.5mm (16HP)
+    // mm/px: x=0.5419, y=0.5354
+    // Circle centres in SVG: cx=25,75,125 cy=105,175
+    // Shifted right +5mm, down +3mm from calculated positions
+    // K1: 25*0.5419+5=18.55, 105*0.5354+3=59.22
+    // K2: 75*0.5419+5=45.64, cy same
+    // K3: 125*0.5419+5=72.74
+    // K4-K6: same x, 175*0.5354+3=96.70
+    // KnobSize: 40px*0.5419=21.68mm
+    // Display: well within bounds, x=4 y=12 w=55 h=9
+
     static constexpr float KnobSize = 21.68f;
 
     static constexpr std::array<MetaModule::Element, 8> Elements {{
-        makeKnob   (13.55f, 56.22f, KnobSize, "K1", "Knob 1 Red"),
-        makeKnob   (40.64f, 56.22f, KnobSize, "K2", "Knob 2 Orange"),
-        makeKnob   (67.74f, 56.22f, KnobSize, "K3", "Knob 3 Yellow"),
-        makeKnob   (13.55f, 93.70f, KnobSize, "K4", "Knob 4 Green"),
-        makeKnob   (40.64f, 93.70f, KnobSize, "K5", "Knob 5 Blue"),
-        makeKnob   (67.74f, 93.70f, KnobSize, "K6", "Knob 6 Purple"),
-        makeDisplay( 3.25f, 11.78f, 74.78f, 13.92f, "Display"),
-        makeAltAction("Set", "Next Set — cycles knob set"),
+        makeKnob   (18.55f, 59.22f, KnobSize, "K1", "Knob 1 Red"),
+        makeKnob   (45.64f, 59.22f, KnobSize, "K2", "Knob 2 Orange"),
+        makeKnob   (72.74f, 59.22f, KnobSize, "K3", "Knob 3 Yellow"),
+        makeKnob   (18.55f, 96.70f, KnobSize, "K4", "Knob 4 Green"),
+        makeKnob   (45.64f, 96.70f, KnobSize, "K5", "Knob 5 Blue"),
+        makeKnob   (72.74f, 96.70f, KnobSize, "K6", "Knob 6 Purple"),
+        makeDisplay( 4.00f, 12.00f, 55.00f,  9.00f, "Display"),
+        makeAltAction("Set", "Next Set"),
     }};
 
     enum Params  { K1, K2, K3, K4, K5, K6, NumParams };
@@ -102,7 +113,7 @@ public:
                 savedCC[s][k] = DefaultCC[s][k];
         for (int k = 0; k < NumKnobs; k++)
             lastVal[k] = -1.f;
-        snprintf(line1, sizeof(line1), "RYTM CC - Set 1");
+        snprintf(line1, sizeof(line1), "RYTM CC Set 1");
         snprintf(line2, sizeof(line2), "Turn a knob");
     }
 
@@ -124,9 +135,9 @@ public:
                 msg.bytes[2] = midiVal;
                 midiOut.sendMessage(msg);
 
-                snprintf(line1, sizeof(line1), "%s  CC%d",
+                snprintf(line1, sizeof(line1), "%s CC%d",
                     KnobNames[k], ccNum);
-                snprintf(line2, sizeof(line2), "Val:%d  Set:%d",
+                snprintf(line2, sizeof(line2), "Val:%d Set:%d",
                     midiVal, activeSet + 1);
                 displayTimer = 48000 * 2;
             }
