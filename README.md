@@ -1,2 +1,2 @@
 # metamodule-rytm-cc
-This is the development work to make use of MetaModule with CtrlCC plugin and the companion HTML patch builder.
+This is the repo to help others make use of 4MS MetaModule with CtrlCC plugin and the companion HTML patch builder.
