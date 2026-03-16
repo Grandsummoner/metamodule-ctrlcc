@@ -78,7 +78,7 @@ static constexpr MetaModule::MonoLight makeLight(float px, float py,
     light.y_mm       = py;
     light.short_name = sn;
     light.long_name  = sn;
-    light.color      = MetaModule::RGB565{col};
+    light.color      = RGB565{col};
     return light;
 }
 
@@ -91,8 +91,6 @@ struct Info : MetaModule::ModuleInfoBase {
 
     static constexpr float KnobSize = 15.17f;
 
-    // SET dots in PNG at px(38,50) px(52,50) px(66,50) px(80,50)
-    // mm: x=20.59, 28.18, 35.77, 43.35  y=26.77
     static constexpr std::array<MetaModule::Element, 13> Elements {{
         makeKnob   (13.55f,  56.22f, KnobSize, "K1", "Knob 1 Red"),
         makeKnob   (40.64f,  56.22f, KnobSize, "K2", "Knob 2 Orange"),
