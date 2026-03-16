@@ -3,6 +3,7 @@
 #include "CoreModules/elements/elements.hh"
 #include "CoreModules/elements/element_counter.hh"
 #include "CoreModules/elements/element_info.hh"
+#include "CoreModules/elements/colors.hh"
 #include "midi.hpp"
 
 #include <array>
@@ -21,6 +22,8 @@ static constexpr uint8_t DefaultCC[NumSets][NumKnobs] = {
     {74, 75, 70, 71, 78, 80},
     {7,  10, 82, 83, 102, 109},
 };
+
+static constexpr uint8_t DefaultCh[NumKnobs] = {0, 0, 0, 0, 0, 0};
 
 static const char* DefaultSetNames[NumSets] = {
     "Set 1", "Set 2", "Set 3", "Set 4"
@@ -68,6 +71,18 @@ static constexpr MetaModule::DynamicTextDisplay makeDisplay(
     return disp;
 }
 
+static constexpr MetaModule::MonoLight makeLight(float px, float py,
+                                                  MetaModule::RGB565 col,
+                                                  std::string_view sn) {
+    MetaModule::MonoLight light{};
+    light.x_mm      = px;
+    light.y_mm      = py;
+    light.short_name = sn;
+    light.long_name  = sn;
+    light.color      = col;
+    return light;
+}
+
 struct Info : MetaModule::ModuleInfoBase {
     static constexpr std::string_view slug         = "RytmCC";
     static constexpr std::string_view description  = "6-knob MIDI CC for Elektron Analog Rytm MkII";
@@ -77,11 +92,11 @@ struct Info : MetaModule::ModuleInfoBase {
 
     static constexpr float KnobSize = 15.17f;
 
-    // Full width displays — centre at 40.64mm (dead centre of 81.28mm panel)
-    // Both strings exactly 18 chars so centre never shifts
-    // Top display: x=3.25 w=74.78 y=18
-    // Bottom display: x=3.25 w=74.78 y=115
-    static constexpr std::array<MetaModule::Element, 9> Elements {{
+    // SET dots in PNG at px(38,50) px(52,50) px(66,50) px(80,50)
+    // mm: x=38*0.5419=20.59, x=52*0.5419=28.18
+    //     x=66*0.5419=35.77, x=80*0.5419=43.35
+    // y=50*0.5354=26.77mm
+    static constexpr std::array<MetaModule::Element, 13> Elements {{
         makeKnob   (13.55f,  56.22f, KnobSize, "K1", "Knob 1 Red"),
         makeKnob   (40.64f,  56.22f, KnobSize, "K2", "Knob 2 Orange"),
         makeKnob   (67.74f,  56.22f, KnobSize, "K3", "Knob 3 Yellow"),
@@ -90,47 +105,49 @@ struct Info : MetaModule::ModuleInfoBase {
         makeKnob   (67.74f,  93.70f, KnobSize, "K6", "Knob 6 Purple"),
         makeDisplay( 3.25f,  18.00f, 74.78f,   9.64f, "CCDisp"),
         makeDisplay( 3.25f, 115.00f, 74.78f,   7.50f, "SetDisp"),
+        makeLight  (20.59f,  26.77f, MetaModule::Colors565::Blue,   "S1"),
+        makeLight  (28.18f,  26.77f, MetaModule::Colors565::Green,  "S2"),
+        makeLight  (35.77f,  26.77f, MetaModule::Colors565::Orange, "S3"),
+        makeLight  (43.35f,  26.77f, MetaModule::Colors565::Violet, "S4"),
         makeAlt    ("NextSet", "Next Set"),
     }};
 
     enum Params  { K1, K2, K3, K4, K5, K6, NumParams };
-    enum Lights  { CCDisplay, SetDisplay };
+    enum Lights  { CCDisplay, SetDisplay, SetLight1, SetLight2, SetLight3, SetLight4 };
 };
 
 class Module : public CoreProcessor {
 public:
     Module() {
         for (int s = 0; s < NumSets; s++) {
-            for (int k = 0; k < NumKnobs; k++)
+            for (int k = 0; k < NumKnobs; k++) {
                 savedCC[s][k] = DefaultCC[s][k];
+                savedCh[s][k] = DefaultCh[k];
+            }
             snprintf(setNames[s], sizeof(setNames[s]),
                 "%s", DefaultSetNames[s]);
         }
         for (int k = 0; k < NumKnobs; k++)
             lastVal[k] = -1.f;
-        refreshDisplay(255, 0);
+        refreshDisplay(255, 0, 0);
     }
 
     void set_samplerate(float) override {}
 
-    void refreshDisplay(uint8_t ccNum, uint8_t midiVal) {
-        // Both strings exactly 18 chars — centre stays fixed
+    void refreshDisplay(uint8_t ccNum, uint8_t midiVal, uint8_t ch) {
         if (ccNum == 255) {
-            // "Ch1  Ready        " = 18 chars
             snprintf(ccBuf, sizeof(ccBuf),
-                "Ch%-2d  Ready       ", midiCh + 1);
+                "Ch%-2d  Ready         ", ch + 1);
         } else {
-            // "Ch1 CC039 ||||...." = 18 chars
             int filled = (midiVal * 8) / 127;
             char bar[9];
             for (int i = 0; i < 8; i++)
                 bar[i] = (i < filled) ? '|' : '.';
             bar[8] = 0;
             snprintf(ccBuf, sizeof(ccBuf),
-                "Ch%-2d CC%03d %s  ",
-                midiCh + 1, ccNum, bar);
+                "Ch%-2d CC%03d %s      ",
+                ch + 1, ccNum, bar);
         }
-        // Set name centred with padding
         snprintf(setNameBuf, sizeof(setNameBuf),
             "%-18s", setNames[activeSet]);
     }
@@ -139,7 +156,8 @@ public:
         if (displayTimer > 0) {
             displayTimer--;
             if (displayTimer == 0)
-                refreshDisplay(255, 0);
+                refreshDisplay(255, 0,
+                    savedCh[activeSet][0]);
         }
 
         for (int k = 0; k < NumKnobs; k++) {
@@ -147,16 +165,17 @@ public:
             if (v != lastVal[k]) {
                 lastVal[k] = v;
                 uint8_t ccNum   = savedCC[activeSet][k];
+                uint8_t ch      = savedCh[activeSet][k];
                 uint8_t midiVal = static_cast<uint8_t>(v * 127.f) & 0x7F;
 
                 rack::midi::Message msg;
                 msg.bytes[0] = static_cast<uint8_t>(
-                    0xB0 | (midiCh & 0x0F));
+                    0xB0 | (ch & 0x0F));
                 msg.bytes[1] = ccNum & 0x7F;
                 msg.bytes[2] = midiVal;
                 midiOut.sendMessage(msg);
 
-                refreshDisplay(ccNum, midiVal);
+                refreshDisplay(ccNum, midiVal, ch);
                 displayTimer = 48000 * 2;
             }
         }
@@ -169,7 +188,7 @@ public:
             if (val > 0.5f) {
                 activeSet = (activeSet + 1) % NumSets;
                 for (int k = 0; k < NumKnobs; k++) lastVal[k] = -1.f;
-                refreshDisplay(255, 0);
+                refreshDisplay(255, 0, savedCh[activeSet][0]);
                 displayTimer = 48000 * 2;
             }
         }
@@ -177,6 +196,15 @@ public:
 
     float get_param(int id) const override {
         if (id >= 0 && id < Info::NumParams) return params[id];
+        return 0.f;
+    }
+
+    // Light brightness — active set dot = 1.0, others = 0.0
+    float get_led_brightness(int led_id) const override {
+        if (led_id == Info::SetLight1) return activeSet == 0 ? 1.f : 0.f;
+        if (led_id == Info::SetLight2) return activeSet == 1 ? 1.f : 0.f;
+        if (led_id == Info::SetLight3) return activeSet == 2 ? 1.f : 0.f;
+        if (led_id == Info::SetLight4) return activeSet == 3 ? 1.f : 0.f;
         return 0.f;
     }
 
@@ -193,13 +221,20 @@ public:
     void set_input(int, float) override {}
     float get_output(int) const override { return 0.f; }
 
+    // Save format:
+    // [0]   active set '0'-'3'
+    // [1..24]  CC numbers (4 sets x 6 knobs)
+    // [25..48] MIDI channels (4 sets x 6 knobs)
+    // [49..80] set names (4 x 8 chars)
     std::string save_state() override {
         std::string out;
         out += static_cast<char>('0' + activeSet);
-        out += static_cast<char>(midiCh);
         for (int s = 0; s < NumSets; s++)
             for (int k = 0; k < NumKnobs; k++)
                 out += static_cast<char>(savedCC[s][k]);
+        for (int s = 0; s < NumSets; s++)
+            for (int k = 0; k < NumKnobs; k++)
+                out += static_cast<char>(savedCh[s][k]);
         for (int s = 0; s < NumSets; s++) {
             char buf[9] = {};
             snprintf(buf, sizeof(buf), "%.8s", setNames[s]);
@@ -217,13 +252,13 @@ public:
             activeSet = sv[pos] - '0';
         pos++;
 
-        if (pos < sv.size())
-            midiCh = static_cast<uint8_t>(sv[pos]) & 0x0F;
-        pos++;
-
         for (int s = 0; s < NumSets && pos < sv.size(); s++)
             for (int k = 0; k < NumKnobs && pos < sv.size(); k++, pos++)
                 savedCC[s][k] = static_cast<uint8_t>(sv[pos]);
+
+        for (int s = 0; s < NumSets && pos < sv.size(); s++)
+            for (int k = 0; k < NumKnobs && pos < sv.size(); k++, pos++)
+                savedCh[s][k] = static_cast<uint8_t>(sv[pos]) & 0x0F;
 
         for (int s = 0; s < NumSets && pos + 8 <= sv.size();
              s++, pos += 8) {
@@ -238,20 +273,20 @@ public:
         }
 
         for (int k = 0; k < NumKnobs; k++) lastVal[k] = -1.f;
-        refreshDisplay(255, 0);
+        refreshDisplay(255, 0, savedCh[activeSet][0]);
         displayTimer = 48000 * 2;
     }
 
 private:
-    float   params[Info::NumParams]    = {};
-    float   lastVal[NumKnobs]          = {};
-    int     activeSet                  = 0;
-    int     displayTimer               = 0;
-    uint8_t midiCh                     = 0;
-    uint8_t savedCC[NumSets][NumKnobs] = {};
-    char    setNames[NumSets][16]      = {};
-    char    ccBuf[32]                  = {};
-    char    setNameBuf[32]             = {};
+    float   params[Info::NumParams]      = {};
+    float   lastVal[NumKnobs]            = {};
+    int     activeSet                    = 0;
+    int     displayTimer                 = 0;
+    uint8_t savedCC[NumSets][NumKnobs]   = {};
+    uint8_t savedCh[NumSets][NumKnobs]   = {};
+    char    setNames[NumSets][16]        = {};
+    char    ccBuf[32]                    = {};
+    char    setNameBuf[32]               = {};
     rack::midi::Output midiOut;
 };
 
