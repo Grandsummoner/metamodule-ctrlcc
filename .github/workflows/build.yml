@@ -29,14 +29,7 @@ jobs:
           git clone --depth=1 --recurse-submodules \
             https://github.com/4ms/metamodule-plugin-sdk.git \
             metamodule-plugin-sdk
-
-      - name: Inspect CoreProcessor and MonoLight
-        run: |
-          echo "=== CoreProcessor.hh ==="
-          cat metamodule-plugin-sdk/core-interface/CoreModules/CoreProcessor.hh
-          echo "=== MonoLight struct ==="
-          grep -A 10 "struct MonoLight" metamodule-plugin-sdk/core-interface/CoreModules/elements/base_element.hh
-
+      
       - name: Create empty assets dir
         run: mkdir -p assets
 
