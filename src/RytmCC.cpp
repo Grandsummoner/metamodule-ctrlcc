@@ -84,8 +84,8 @@ struct Info : MetaModule::ModuleInfoBase {
         makeKnob   (13.55f,  93.70f, KnobSize, "K4", "Knob 4 Green"),
         makeKnob   (40.64f,  93.70f, KnobSize, "K5", "Knob 5 Blue"),
         makeKnob   (67.74f,  93.70f, KnobSize, "K6", "Knob 6 Purple"),
-        makeDisplay(30.00f,  18.00f, 44.00f,  9.64f, "CCDisp"),
-        makeDisplay(30.00f, 117.00f, 44.00f,  7.50f, "SetDisp"),
+        makeDisplay(36.00f,  18.00f, 38.00f,   9.64f, "CCDisp"),
+        makeDisplay(30.00f, 115.00f, 44.00f,   7.50f, "SetDisp"),
         makeAlt    ("NextSet", "Next Set"),
     }};
 
