@@ -29,7 +29,13 @@ jobs:
           git clone --depth=1 --recurse-submodules \
             https://github.com/4ms/metamodule-plugin-sdk.git \
             metamodule-plugin-sdk
-      
+            
+      - name: Inspect colors and TextDisplay
+        run: |
+          echo "=== colors_rgb565.hh ==="
+          cat metamodule-plugin-sdk/cpputil/util/colors_rgb565.hh
+          echo "=== TextDisplay full struct ==="
+          grep -B2 -A 20 "struct TextDisplay" metamodule-plugin-sdk/core-interface/CoreModules/elements/base_element.hh
       - name: Create empty assets dir
         run: mkdir -p assets
 
