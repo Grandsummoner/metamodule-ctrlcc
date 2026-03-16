@@ -77,9 +77,6 @@ struct Info : MetaModule::ModuleInfoBase {
 
     static constexpr float KnobSize = 15.17f;
 
-    // CALIBRATION BUILD — displays at extreme x=20mm
-    // Next build will try x=40mm
-    // Comparing photos will tell us exact text coordinate system
     static constexpr std::array<MetaModule::Element, 9> Elements {{
         makeKnob   (13.55f,  56.22f, KnobSize, "K1", "Knob 1 Red"),
         makeKnob   (40.64f,  56.22f, KnobSize, "K2", "Knob 2 Orange"),
@@ -87,8 +84,8 @@ struct Info : MetaModule::ModuleInfoBase {
         makeKnob   (13.55f,  93.70f, KnobSize, "K4", "Knob 4 Green"),
         makeKnob   (40.64f,  93.70f, KnobSize, "K5", "Knob 5 Blue"),
         makeKnob   (67.74f,  93.70f, KnobSize, "K6", "Knob 6 Purple"),
-        makeDisplay(20.00f,  11.78f, 50.00f,   9.64f, "CCDisp"),
-        makeDisplay(20.00f, 111.37f, 50.00f,   7.50f, "SetDisp"),
+        makeDisplay(30.00f,  24.00f, 44.00f,   9.64f, "CCDisp"),
+        makeDisplay(30.00f, 123.00f, 44.00f,   7.50f, "SetDisp"),
         makeAlt    ("NextSet", "Next Set"),
     }};
 
