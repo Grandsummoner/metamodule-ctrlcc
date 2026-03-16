@@ -77,20 +77,24 @@ struct Info : MetaModule::ModuleInfoBase {
     static constexpr std::string_view png_filename = "RytmCC/RytmCC.png";
     static constexpr std::string_view svg_filename = "";
 
-    static constexpr float KnobSize = 21.13f;
+    // KnobSize reduced to fit within coloured rings
+    // PNG 150x240, panel 81.28x128.5mm
+    // Knob centres: px(25,105) px(75,105) px(125,105)
+    //               px(25,175) px(75,175) px(125,175)
+    // mm: x=13.55,40.64,67.74  y=56.22,93.70
+    // KnobSize: inner circle radius 14px * 2 = 28px = 15.17mm
+    // Display: px(6,22) w=138 h=28 -> mm(3.25,11.78) w=74.78 h=15.00
 
-    // Calibration build — K1 at exact px(25,102) -> mm(13.55, 54.61)
-    // Red crosshairs at same pixel positions in PNG
-    // K2 at px(75,102) -> mm(40.64, 54.61)
-    // K4 at px(25,171) -> mm(13.55, 91.55)
+    static constexpr float KnobSize = 15.17f;
+
     static constexpr std::array<MetaModule::Element, 8> Elements {{
-        makeKnob   (13.55f, 54.61f, KnobSize, "K1", "Knob 1 Red"),
-        makeKnob   (40.64f, 54.61f, KnobSize, "K2", "Knob 2 Orange"),
-        makeKnob   (67.74f, 54.61f, KnobSize, "K3", "Knob 3 Yellow"),
-        makeKnob   (13.55f, 91.55f, KnobSize, "K4", "Knob 4 Green"),
-        makeKnob   (40.64f, 91.55f, KnobSize, "K5", "Knob 5 Blue"),
-        makeKnob   (67.74f, 91.55f, KnobSize, "K6", "Knob 6 Purple"),
-        makeDisplay(20.00f, 22.00f, 40.00f,  9.00f, "Display"),
+        makeKnob   (13.55f, 56.22f, KnobSize, "K1", "Knob 1 Red"),
+        makeKnob   (40.64f, 56.22f, KnobSize, "K2", "Knob 2 Orange"),
+        makeKnob   (67.74f, 56.22f, KnobSize, "K3", "Knob 3 Yellow"),
+        makeKnob   (13.55f, 93.70f, KnobSize, "K4", "Knob 4 Green"),
+        makeKnob   (40.64f, 93.70f, KnobSize, "K5", "Knob 5 Blue"),
+        makeKnob   (67.74f, 93.70f, KnobSize, "K6", "Knob 6 Purple"),
+        makeDisplay( 3.25f, 11.78f, 74.78f, 15.00f, "Display"),
         makeAltAction("Set", "Next Set"),
     }};
 
@@ -106,7 +110,7 @@ public:
                 savedCC[s][k] = DefaultCC[s][k];
         for (int k = 0; k < NumKnobs; k++)
             lastVal[k] = -1.f;
-        snprintf(line1, sizeof(line1), "RYTM CC Set 1");
+        snprintf(line1, sizeof(line1), "RYTM CC  Set 1");
         snprintf(line2, sizeof(line2), "Turn a knob");
     }
 
@@ -128,9 +132,9 @@ public:
                 msg.bytes[2] = midiVal;
                 midiOut.sendMessage(msg);
 
-                snprintf(line1, sizeof(line1), "%s CC%d",
+                snprintf(line1, sizeof(line1), "%s  CC%d",
                     KnobNames[k], ccNum);
-                snprintf(line2, sizeof(line2), "Val:%d Set:%d",
+                snprintf(line2, sizeof(line2), "Val:%d  Set:%d",
                     midiVal, activeSet + 1);
                 displayTimer = 48000 * 2;
             }
@@ -144,7 +148,8 @@ public:
             if (val > 0.5f) {
                 activeSet = (activeSet + 1) % NumSets;
                 for (int k = 0; k < NumKnobs; k++) lastVal[k] = -1.f;
-                snprintf(line1, sizeof(line1), "Set %d", activeSet + 1);
+                snprintf(line1, sizeof(line1), "Set %d active",
+                    activeSet + 1);
                 snprintf(line2, sizeof(line2), "Turn a knob");
                 displayTimer = 48000 * 2;
             }
