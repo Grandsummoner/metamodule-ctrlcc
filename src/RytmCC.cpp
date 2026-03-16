@@ -22,9 +22,8 @@ static constexpr uint8_t DefaultCC[NumSets][NumKnobs] = {
     {7,  10, 82, 83, 102, 109},
 };
 
-static const char* KnobNames[NumKnobs] = {
-    "K1 Red", "K2 Org", "K3 Yel",
-    "K4 Grn", "K5 Blu", "K6 Pur"
+static const char* DefaultSetNames[NumSets] = {
+    "Set 1", "Set 2", "Set 3", "Set 4"
 };
 
 namespace RytmCC {
@@ -77,15 +76,7 @@ struct Info : MetaModule::ModuleInfoBase {
     static constexpr std::string_view png_filename = "RytmCC/RytmCC.png";
     static constexpr std::string_view svg_filename = "";
 
-    // KnobSize reduced to fit within coloured rings
-    // PNG 150x240, panel 81.28x128.5mm
-    // Knob centres: px(25,105) px(75,105) px(125,105)
-    //               px(25,175) px(75,175) px(125,175)
-    // mm: x=13.55,40.64,67.74  y=56.22,93.70
-    // KnobSize: inner circle radius 14px * 2 = 28px = 15.17mm
-    // Display: px(6,22) w=138 h=28 -> mm(3.25,11.78) w=74.78 h=15.00
-
-    static constexpr float KnobSize = 15.17f;
+    static constexpr float KnobSize = 13.00f;
 
     static constexpr std::array<MetaModule::Element, 8> Elements {{
         makeKnob   (13.55f, 56.22f, KnobSize, "K1", "Knob 1 Red"),
@@ -105,19 +96,43 @@ struct Info : MetaModule::ModuleInfoBase {
 class Module : public CoreProcessor {
 public:
     Module() {
-        for (int s = 0; s < NumSets; s++)
+        for (int s = 0; s < NumSets; s++) {
             for (int k = 0; k < NumKnobs; k++)
                 savedCC[s][k] = DefaultCC[s][k];
+            snprintf(setNames[s], sizeof(setNames[s]), "%s", DefaultSetNames[s]);
+        }
         for (int k = 0; k < NumKnobs; k++)
             lastVal[k] = -1.f;
-        snprintf(line1, sizeof(line1), "RYTM CC  Set 1");
-        snprintf(line2, sizeof(line2), "Turn a knob");
+        updateDisplay(0, 0, 0);
     }
 
     void set_samplerate(float) override {}
 
+    // Build the single-row display:
+    // "Perf 1-6  Ch1 CC007 ||||||||  "
+    // Line1: set name
+    // Line2: Ch + CC + value bar
+    void updateDisplay(int knobIdx, uint8_t ccNum, uint8_t midiVal) {
+        snprintf(line1, sizeof(line1), "%s", setNames[activeSet]);
+
+        // Value bar: 8 chars, filled proportionally
+        int filled = (midiVal * 8) / 127;
+        char bar[9];
+        for (int i = 0; i < 8; i++)
+            bar[i] = (i < filled) ? '|' : '.';
+        bar[8] = 0;
+
+        snprintf(line2, sizeof(line2), "Ch%d CC%03d %s",
+            midiCh + 1, ccNum, bar);
+    }
+
     void update() override {
         if (displayTimer > 0) displayTimer--;
+        else {
+            // Idle display — show set name and channel
+            snprintf(line1, sizeof(line1), "%s", setNames[activeSet]);
+            snprintf(line2, sizeof(line2), "Ch%d  Ready", midiCh + 1);
+        }
 
         for (int k = 0; k < NumKnobs; k++) {
             float v = params[k];
@@ -127,15 +142,12 @@ public:
                 uint8_t midiVal = static_cast<uint8_t>(v * 127.f) & 0x7F;
 
                 rack::midi::Message msg;
-                msg.bytes[0] = 0xB0;
+                msg.bytes[0] = static_cast<uint8_t>(0xB0 | (midiCh & 0x0F));
                 msg.bytes[1] = ccNum & 0x7F;
                 msg.bytes[2] = midiVal;
                 midiOut.sendMessage(msg);
 
-                snprintf(line1, sizeof(line1), "%s  CC%d",
-                    KnobNames[k], ccNum);
-                snprintf(line2, sizeof(line2), "Val:%d  Set:%d",
-                    midiVal, activeSet + 1);
+                updateDisplay(k, ccNum, midiVal);
                 displayTimer = 48000 * 2;
             }
         }
@@ -145,12 +157,12 @@ public:
         if (id >= 0 && id < Info::NumParams) {
             params[id] = val;
         } else if (id == Info::NumParams) {
+            // AltParamAction — Next Set
             if (val > 0.5f) {
                 activeSet = (activeSet + 1) % NumSets;
                 for (int k = 0; k < NumKnobs; k++) lastVal[k] = -1.f;
-                snprintf(line1, sizeof(line1), "Set %d active",
-                    activeSet + 1);
-                snprintf(line2, sizeof(line2), "Turn a knob");
+                snprintf(line1, sizeof(line1), "%s", setNames[activeSet]);
+                snprintf(line2, sizeof(line2), "Ch%d  Ready", midiCh + 1);
                 displayTimer = 48000 * 2;
             }
         }
@@ -170,28 +182,58 @@ public:
     void set_input(int, float) override {}
     float get_output(int) const override { return 0.f; }
 
+    // Save format:
+    // Byte 0: active set ('0'-'3')
+    // Byte 1: midi channel (0-15)
+    // Bytes 2..25: CC numbers (4 sets x 6 knobs)
+    // Bytes 26..57: set names (4 x 8 chars, null padded)
     std::string save_state() override {
         std::string out;
         out += static_cast<char>('0' + activeSet);
+        out += static_cast<char>(midiCh);
         for (int s = 0; s < NumSets; s++)
             for (int k = 0; k < NumKnobs; k++)
                 out += static_cast<char>(savedCC[s][k]);
+        for (int s = 0; s < NumSets; s++) {
+            char buf[9] = {};
+            snprintf(buf, sizeof(buf), "%.8s", setNames[s]);
+            for (int i = 0; i < 8; i++)
+                out += buf[i];
+        }
         return out;
     }
 
     void load_state(std::string_view sv) override {
         if (sv.empty()) return;
-        if (sv[0] >= '0' && sv[0] < '0' + NumSets)
-            activeSet = sv[0] - '0';
-        if ((int)sv.size() >= 1 + NumSets * NumKnobs) {
-            for (int s = 0; s < NumSets; s++)
-                for (int k = 0; k < NumKnobs; k++)
-                    savedCC[s][k] = static_cast<uint8_t>(
-                        sv[1 + s * NumKnobs + k]);
+        size_t pos = 0;
+
+        if (pos < sv.size() && sv[pos] >= '0' && sv[pos] < '0' + NumSets)
+            activeSet = sv[pos] - '0';
+        pos++;
+
+        if (pos < sv.size())
+            midiCh = static_cast<uint8_t>(sv[pos]) & 0x0F;
+        pos++;
+
+        // CC numbers
+        for (int s = 0; s < NumSets && pos < sv.size(); s++)
+            for (int k = 0; k < NumKnobs && pos < sv.size(); k++, pos++)
+                savedCC[s][k] = static_cast<uint8_t>(sv[pos]);
+
+        // Set names
+        for (int s = 0; s < NumSets && pos + 8 <= sv.size(); s++, pos += 8) {
+            char buf[9] = {};
+            for (int i = 0; i < 8; i++)
+                buf[i] = sv[pos + i];
+            buf[8] = 0;
+            // Strip null padding
+            snprintf(setNames[s], sizeof(setNames[s]), "%s", buf);
         }
+
         for (int k = 0; k < NumKnobs; k++) lastVal[k] = -1.f;
-        snprintf(line1, sizeof(line1), "Set %d loaded", activeSet + 1);
-        snprintf(line2, sizeof(line2), "Turn a knob");
+        snprintf(line1, sizeof(line1), "%s", setNames[activeSet]);
+        snprintf(line2, sizeof(line2), "Ch%d  Loaded", midiCh + 1);
+        displayTimer = 48000 * 2;
     }
 
 private:
@@ -200,7 +242,9 @@ private:
     float   lastBtn                    = 0.f;
     int     activeSet                  = 0;
     int     displayTimer               = 0;
+    uint8_t midiCh                     = 0;
     uint8_t savedCC[NumSets][NumKnobs] = {};
+    char    setNames[NumSets][16]      = {};
     char    line1[32]                  = {};
     char    line2[32]                  = {};
     rack::midi::Output midiOut;
