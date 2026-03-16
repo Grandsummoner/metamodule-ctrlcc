@@ -1,1 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CtrlCC — User Guide</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --text: #111;
+    --text2: #555;
+    --text3: #999;
+    --border: #e2e2e2;
+    --bg: #f8f8f8;
+    --surface: #fff;
+    --blue: #2563eb;
+    --blue-bg: #eff6ff;
+    --blue-border: #bfdbfe;
+    --green: #16a34a;
+    --green-bg: #f0fdf4;
+    --orange: #ea580c;
+    --orange-bg: #fff7ed;
+    --purple: #7c3aed;
+    --purple-bg: #f5f3ff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 15px;
+    line-height: 1.7;
+    color: var(--text);
+    background: var(--bg);
+  }
 
+  /* Page layout */
+  .page {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 48px 32px 80px;
+  }
+
+  /* Header */
+  .doc-header {
+    border-bottom: 2px solid var(--text);
+    padding-bottom: 24px;
+    margin-bottom: 48px;
+  }
+  .doc-tag {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--blue);
+    margin-bottom: 10px;
+  }
+  .doc-title {
+    font-size: 36px;
+    font-weight: 700;
+    letter-spacing: -.02em;
+    line-height: 1.1;
+    margin-bottom: 12px;
+  }
+  .doc-subtitle {
+    font-size: 16px;
+    color: var(--text2);
+    max-width: 540px;
+    line-height: 1.5;
+  }
+  .doc-meta {
+    margin-top: 16px;
+    font-size: 12px;
+    color: var(--text3);
+  }
+
+  /* Table of contents */
+  .toc {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin-bottom: 48px;
+  }
+  .toc-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 12px;
+  }
+  .toc ol {
+    padding-left: 20px;
+  }
+  .toc li {
+    margin-bottom: 4px;
+    font-size: 14px;
+  }
+  .toc a {
+    color: var(--blue);
+    text-decoration: none;
+  }
+  .toc a:hover { text-decoration: underline; }
+
+  /* Sections */
+  .section {
+    margin-bottom: 52px;
+  }
+  .section-num {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 6px;
+  }
+  h2 {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -.01em;
+    margin-bottom: 16px;
+    line-height: 1.2;
+  }
+  h3 {
+    font-size: 16px;
+    font-weight: 600;
+    margin-top: 28px;
+    margin-bottom: 10px;
+  }
+  p {
+    margin-bottom: 14px;
+    color: var(--text);
+  }
+  p:last-child { margin-bottom: 0; }
+
+  /* Callout boxes */
+  .callout {
+    border-radius: 6px;
+    padding: 14px 18px;
+    margin: 20px 0;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  .callout-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+  }
+  .callout.blue { background: var(--blue-bg); border-left: 3px solid var(--blue); }
+  .callout.blue .callout-label { color: var(--blue); }
+  .callout.green { background: var(--green-bg); border-left: 3px solid var(--green); }
+  .callout.green .callout-label { color: var(--green); }
+  .callout.orange { background: var(--orange-bg); border-left: 3px solid var(--orange); }
+  .callout.orange .callout-label { color: var(--orange); }
+  .callout.purple { background: var(--purple-bg); border-left: 3px solid var(--purple); }
+  .callout.purple .callout-label { color: var(--purple); }
+
+  /* Steps */
+  .steps {
+    counter-reset: step;
+    margin: 20px 0;
+  }
+  .step {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 16px;
+    align-items: flex-start;
+  }
+  .step-num {
+    counter-increment: step;
+    background: var(--text);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .step-body { flex: 1; font-size: 14px; line-height: 1.6; }
+  .step-body strong { font-weight: 600; }
+
+  /* Set colour pills */
+  .set-pills {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin: 16px 0;
+  }
+  .pill {
+    font-size: 12px;
+    font-weight: 700;
+    padding: 4px 14px;
+    border-radius: 20px;
+    letter-spacing: .02em;
+  }
+  .pill-blue { background: #dbeafe; color: var(--blue); }
+  .pill-green { background: #dcfce7; color: var(--green); }
+  .pill-orange { background: #ffedd5; color: var(--orange); }
+  .pill-purple { background: #ede9fe; color: var(--purple); }
+
+  /* Inline code */
+  code {
+    background: #f0f0f0;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    font-size: 13px;
+    padding: 1px 6px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    color: #c7254e;
+  }
+
+  /* Key/label style */
+  .key {
+    background: var(--surface);
+    border: 1px solid var(--border2, #ccc);
+    border-bottom-width: 2px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 1px 7px;
+    font-family: 'SF Mono', monospace;
+    color: var(--text);
+    white-space: nowrap;
+  }
+
+  /* Divider */
+  hr {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 40px 0;
+  }
+
+  /* Limitations table */
+  .limit-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin: 16px 0;
+  }
+  .limit-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px 16px;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  .limit-card strong {
+    display: block;
+    font-size: 12px;
+    font-weight: 700;
+    margin-bottom: 4px;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: .06em;
+  }
+
+  /* Thank you footer */
+  .doc-footer {
+    margin-top: 64px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    font-size: 13px;
+    color: var(--text3);
+    text-align: center;
+    line-height: 1.8;
+  }
+
+  @media (max-width: 600px) {
+    .page { padding: 28px 18px 60px; }
+    .doc-title { font-size: 26px; }
+    .limit-grid { grid-template-columns: 1fr; }
+  }
+  @media print {
+    body { background: #fff; }
+    .page { padding: 24px; }
+    .toc a { color: #000; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Header -->
+  <div class="doc-header">
+    <div class="doc-tag">4ms MetaModule · MIDI CC · User Guide</div>
+    <div class="doc-title">CtrlCC Patch Builder</div>
+    <div class="doc-subtitle">A beginner-friendly guide to building MIDI CC patches for your MetaModule using the CtrlCC plugin and the HTML patch builder.</div>
+    <div class="doc-meta">v1.0 &nbsp;·&nbsp; For MetaModule firmware v2.1+</div>
+  </div>
+
+  <!-- TOC -->
+  <div class="toc">
+    <div class="toc-title">Contents</div>
+    <ol>
+      <li><a href="#what-is-this">What is this?</a></li>
+      <li><a href="#what-it-can-do">What it can do</a></li>
+      <li><a href="#before-you-start">Before you start</a></li>
+      <li><a href="#using-the-builder">Using the patch builder</a></li>
+      <li><a href="#loading-into-metamodule">Loading the patch into MetaModule</a></li>
+      <li><a href="#what-to-ignore">What to ignore in MetaModule</a></li>
+      <li><a href="#limitations">Limitations</a></li>
+      <li><a href="#summary">Summary &amp; thank you</a></li>
+    </ol>
+  </div>
+
+  <!-- Section 1 -->
+  <div class="section" id="what-is-this">
+    <div class="section-num">01</div>
+    <h2>What is this?</h2>
+    <p>The MetaModule is a powerful Eurorack module that runs software synthesiser plugins — but it also has a USB port that can talk to MIDI gear. The <strong>CtrlCC plugin</strong> takes advantage of this by letting six of MetaModule's knobs each send a different MIDI CC (Control Change) message to any device connected over USB MIDI.</p>
+    <p>In plain terms: turn a knob on your MetaModule, and a parameter changes on your synth, drum machine, or sampler — whatever is plugged into the USB port.</p>
+    <p>The <strong>CtrlCC Patch Builder</strong> is a simple offline web tool (a single HTML file, no internet needed) that helps you design those knob assignments visually, then export a ready-to-load patch file for MetaModule. You never have to hand-edit a config file or remember CC numbers.</p>
+
+    <div class="callout blue">
+      <div class="callout-label">New concept: MIDI CC</div>
+      MIDI CC stands for Control Change. Every knob, fader, or button on a MIDI device sends a numbered message — for example, Filter Cutoff might be CC 74, Volume is CC 7. The CtrlCC plugin lets MetaModule's knobs send whichever CC numbers you choose, to whichever MIDI channel you need.
+    </div>
+  </div>
+
+  <!-- Section 2 -->
+  <div class="section" id="what-it-can-do">
+    <div class="section-num">02</div>
+    <h2>What it can do</h2>
+    <p>The CtrlCC plugin gives you <strong>six physical knobs</strong> arranged in two rows of three, organised into <strong>four colour-coded sets</strong>. Each set is a complete group of six assignments — you switch between them from the MetaModule menu.</p>
+
+    <div class="set-pills">
+      <span class="pill pill-blue">Set 1 — Blue</span>
+      <span class="pill pill-green">Set 2 — Green</span>
+      <span class="pill pill-orange">Set 3 — Orange</span>
+      <span class="pill pill-purple">Set 4 — Purple</span>
+    </div>
+
+    <p>That gives you up to <strong>24 unique knob assignments</strong> across all four sets (6 knobs × 4 sets). Each knob can target a different MIDI CC number and a different MIDI channel — so you can control multiple devices at once, or layer parameters across channels on a single device.</p>
+
+    <h3>The builder covers 17 devices out of the box</h3>
+    <p>The patch builder has a built-in database of MIDI CC parameters for commonly used gear, so you can pick parameters by name rather than number. Supported devices include:</p>
+    <p>Elektron Analog Rytm MKII, Analog Four MKII, Digitakt II, Digitone II, Tonverk &nbsp;·&nbsp; Korg minilogue xd &nbsp;·&nbsp; Audiothingies Micromonsta 2 &nbsp;·&nbsp; Make Noise 0-Coast &nbsp;·&nbsp; Novation Circuit Rhythm &nbsp;·&nbsp; Roland TR-1000 &nbsp;·&nbsp; Sonicware ELZ_1 play V2 &nbsp;·&nbsp; Dirtywave M8 &nbsp;·&nbsp; Synthstrom Deluge &nbsp;·&nbsp; OXI Coral &nbsp;·&nbsp; Knobula Pianophonic &nbsp;·&nbsp; Modbap Trinity &nbsp;·&nbsp; Supercritical Redshift 6</p>
+
+    <div class="callout green">
+      <div class="callout-label">Device not listed?</div>
+      No problem. You can still use the builder — just assign knobs manually by typing the CC number directly. Any device that receives standard MIDI CC will work, even if it's not in the dropdown list.
+    </div>
+  </div>
+
+  <!-- Section 3 -->
+  <div class="section" id="before-you-start">
+    <div class="section-num">03</div>
+    <h2>Before you start</h2>
+    <p>Make sure you have the following ready before opening the builder:</p>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body"><strong>CtrlCC plugin installed on MetaModule.</strong> The plugin file is named <code>CtrlCC.mmplugin</code>. Copy it to the <code>plugins/</code> folder on your MetaModule's SD card or internal storage using the WiFi file browser or USB connection.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body"><strong>Your MIDI device connected.</strong> Plug it into MetaModule's USB-C port using a USB-C to USB-A cable (or adapter). The device must support USB MIDI class-compliant mode — most modern gear does. Check your device manual if unsure.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body"><strong>The patch builder HTML file saved somewhere.</strong> It is a single file — <code>ctrlcc-patch-builder.html</code>. Save it anywhere on your computer. It works fully offline; no internet connection is needed once you have the file.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body"><strong>Know your MIDI channels.</strong> Most devices default to receiving on MIDI channel 1. Multi-timbral devices or those with per-track MIDI may use different channels. Check your device settings before building your patch.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 4 -->
+  <div class="section" id="using-the-builder">
+    <div class="section-num">04</div>
+    <h2>Using the patch builder</h2>
+    <p>Open <code>ctrlcc-patch-builder.html</code> in any web browser (Chrome, Firefox, Safari all work). You will see a header bar, a device selector, a sidebar on the left, and the main assignment panel on the right.</p>
+
+    <h3>Step 1 — Name your patch</h3>
+    <p>At the top right, there is a text field labelled <strong>Patch</strong>. Type a name for your patch here — for example <em>Rytm Live Set</em> or <em>Minilogue Jam</em>. This name will be embedded in the exported file and shown on MetaModule when you load the patch.</p>
+
+    <h3>Step 2 — Select your device</h3>
+    <p>Use the <strong>Device</strong> dropdowns at the top of the page. First choose a brand, then a model. The builder will load that device's full list of MIDI CC parameters, organised by category.</p>
+    <p>If your device is not listed, leave the dropdowns empty — you can still assign knobs by entering CC numbers manually in the knob config panel.</p>
+
+    <h3>Step 3 — Choose a set to work on</h3>
+    <p>In the left sidebar, you will see four coloured set tabs. Click the set you want to work on — it becomes the active set (shown solid colour). You can rename each set by typing in the name field below the tabs, for example <em>Drums</em>, <em>Synth</em>, <em>FX</em>, <em>Spare</em>.</p>
+
+    <h3>Step 4 — Assign knobs</h3>
+    <p>The sidebar shows six knob slots (K1 through K6). Click any knob to select it — the right panel will show the assignment controls for that knob.</p>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body"><strong>Pick a parameter.</strong> Browse the category tabs (Oscillators, Filter, Envelope, etc.) and click any parameter button to assign it to the selected knob. The button highlights blue when selected.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body"><strong>Set the MIDI channel.</strong> In the Knob config card at the top of the right panel, use the Channel dropdown to choose which MIDI channel this knob transmits on. Most devices use Channel 1.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body"><strong>Edit the label.</strong> The label field shows the parameter name by default. You can shorten or rename it — this label appears in MetaModule's display when you move the knob.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body"><strong>Repeat for all six knobs</strong>, then switch to the next set tab and repeat for each set you want to use. You do not have to fill all four sets — unused sets are simply ignored.</div>
+      </div>
+    </div>
+
+    <div class="callout blue">
+      <div class="callout-label">Tip — Overview</div>
+      Click the <strong>Overview</strong> button in the header to see a table of every assigned knob across all sets at a glance. Useful for checking for duplicates or confirming channel assignments before exporting.
+    </div>
+
+    <div class="callout purple">
+      <div class="callout-label">Tip — Reference card</div>
+      Click <strong>Ref card</strong> to open a print-friendly reference sheet showing all your knob assignments in a compact grid — handy to keep next to your rig during a performance.
+    </div>
+
+    <h3>Step 5 — Export the patch</h3>
+    <p>When you are happy with your assignments, click the blue <strong>Export .yml</strong> button in the top right. Your browser will download a <code>.yml</code> file — for example <code>Rytm_Live_Set.yml</code>. This is your MetaModule patch file.</p>
+
+    <h3>Reloading a patch later</h3>
+    <p>To continue editing a patch you made previously, click <strong>Load .yml</strong> and select the file from your computer. The builder will read the saved assignments back in and restore your session exactly as you left it.</p>
+  </div>
+
+  <!-- Section 5 -->
+  <div class="section" id="loading-into-metamodule">
+    <div class="section-num">05</div>
+    <h2>Loading the patch into MetaModule</h2>
+    <p>Once you have the <code>.yml</code> file, getting it into MetaModule takes just a few steps.</p>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body"><strong>Copy the file to MetaModule.</strong> The easiest way is via the MetaModule WiFi file browser — connect to MetaModule's WiFi network, open the browser interface, and upload the <code>.yml</code> file to the <code>patches/</code> folder.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body"><strong>Load the patch on MetaModule.</strong> On the module, navigate to the Patches menu and find your file by name. Select it to load. The CtrlCC plugin will appear on the MetaModule screen.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body"><strong>Confirm the display.</strong> When the patch loads, the CtrlCC plugin display should show <em>Ready!</em> at the top. The bottom display shows the active set name. If you move a knob, it will show the CC number and a level bar briefly.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body"><strong>Switch sets on MetaModule.</strong> To switch between your four knob sets, press the MetaModule encoder to open the module menu and select <strong>Next Set</strong>. The display will update to show the new set name and colour indicator lights will change.</div>
+      </div>
+    </div>
+
+    <div class="callout orange">
+      <div class="callout-label">Important</div>
+      The CtrlCC plugin must already be installed in MetaModule's plugin folder <em>before</em> loading the patch. If you load the patch and MetaModule cannot find the plugin, it will show a missing module error. Install the plugin first, then load the patch.
+    </div>
+  </div>
+
+  <!-- Section 6 -->
+  <div class="section" id="what-to-ignore">
+    <div class="section-num">06</div>
+    <h2>What to ignore in MetaModule</h2>
+    <p>MetaModule is a very full-featured module and its interface can feel overwhelming at first. For this particular workflow — using CtrlCC to send MIDI CC — most of MetaModule's features are not involved at all. Here is what you can safely ignore:</p>
+
+    <h3>CV inputs and patch cables</h3>
+    <p>MetaModule has jacks for CV and audio signals that connect to the rest of your Eurorack system. CtrlCC does not use any of these. You do not need to patch any cables into or out of MetaModule for this workflow to work.</p>
+
+    <h3>The VCV Rack layout inside MetaModule</h3>
+    <p>MetaModule runs a version of VCV Rack internally. The patch file the builder exports does include module placement information, but you do not need to interact with it. The patch is designed to work without any additional routing — just load and play.</p>
+
+    <h3>Other modules in the patch</h3>
+    <p>The exported patch includes a Hub module alongside CtrlCC. This is required by MetaModule's file format and is placed automatically. You do not need to connect or configure it.</p>
+
+    <h3>MetaModule's built-in knob mapping</h3>
+    <p>MetaModule has its own system for mapping its panel knobs to parameters inside a patch. For CtrlCC, this mapping is already set up in the exported file — the six MetaModule knobs are pre-connected to CtrlCC's six inputs. You do not need to remap anything manually.</p>
+
+    <h3>Audio output</h3>
+    <p>CtrlCC is a pure MIDI controller. It produces no audio. MetaModule's audio output jacks will be silent when running this patch, which is completely normal.</p>
+
+    <div class="callout green">
+      <div class="callout-label">Short version</div>
+      Load the patch, plug in your MIDI device via USB, turn the knobs. That's it. Everything else in MetaModule's interface is for other workflows and can be ignored entirely for this use case.
+    </div>
+  </div>
+
+  <!-- Section 7 -->
+  <div class="section" id="limitations">
+    <div class="section-num">07</div>
+    <h2>Limitations</h2>
+    <p>CtrlCC is designed to be simple and reliable. That comes with some deliberate constraints to be aware of:</p>
+
+    <div class="limit-grid">
+      <div class="limit-card">
+        <strong>6 knobs per set</strong>
+        Each set has exactly six knobs. There is no way to add more knobs to a single set.
+      </div>
+      <div class="limit-card">
+        <strong>4 sets maximum</strong>
+        The plugin supports four sets. Switching between them requires going through the MetaModule module menu.
+      </div>
+      <div class="limit-card">
+        <strong>CC only — no NRPN</strong>
+        CtrlCC sends standard 7-bit MIDI CC messages (values 0–127). It does not support NRPN, SysEx, or 14-bit high-resolution CC. Some parameters on certain devices are only accessible via NRPN — these are not available.
+      </div>
+      <div class="limit-card">
+        <strong>One USB MIDI device at a time</strong>
+        MetaModule's USB port supports one connected device. If you need to control multiple devices simultaneously, a MIDI hub or merger would be required between MetaModule and your gear.
+      </div>
+      <div class="limit-card">
+        <strong>No feedback from device</strong>
+        The knobs only send — they do not receive the current state from the connected device. If you change a parameter directly on your synth and then move a MetaModule knob, it will jump to the knob's current position.
+      </div>
+      <div class="limit-card">
+        <strong>Builder requires a modern browser</strong>
+        The HTML builder uses standard modern web features. It works in Chrome, Firefox, Safari, and Edge. It does not work in very old browser versions.
+      </div>
+    </div>
+
+    <div class="callout orange">
+      <div class="callout-label">On NRPN gaps in the device list</div>
+      For some devices — particularly Elektron gear — you may notice that not all parameters appear in the builder. This is because those parameters are only controllable via NRPN, not standard CC. The builder only shows what CtrlCC can actually send.
+    </div>
+  </div>
+
+  <!-- Section 8 -->
+  <div class="section" id="summary">
+    <div class="section-num">08</div>
+    <h2>Summary &amp; thank you</h2>
+    <p>CtrlCC bridges two worlds that do not usually talk to each other easily — the hands-on physicality of Eurorack and the rich parameter control of modern MIDI gear. The goal was to make that bridge as frictionless as possible: pick your device, pick your parameters, export, load, play.</p>
+    <p>The patch builder is intentionally minimal. There is no account to create, no cloud service to trust, no internet required. Everything runs locally in your browser, and the file it produces is a plain text patch that MetaModule can read directly.</p>
+    <p>If you find bugs, want to request a device to be added to the database, or have ideas for improvements, the project lives at <strong>github.com/Grandsummoner/metamodule-ctrlcc</strong>.</p>
+    <p>Thank you for trying CtrlCC. Enjoy the knobs.</p>
+
+    <div class="set-pills" style="margin-top: 24px;">
+      <span class="pill pill-blue">Set 1</span>
+      <span class="pill pill-green">Set 2</span>
+      <span class="pill pill-orange">Set 3</span>
+      <span class="pill pill-purple">Set 4</span>
+    </div>
+  </div>
+
+  <div class="doc-footer">
+    CtrlCC for 4ms MetaModule &nbsp;·&nbsp; MetaModule firmware v2.1+ &nbsp;·&nbsp; USB MIDI class-compliant devices
+  </div>
+
+</div>
+</body>
+</html>
