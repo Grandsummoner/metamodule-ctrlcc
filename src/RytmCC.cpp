@@ -79,8 +79,10 @@ struct Info : MetaModule::ModuleInfoBase {
 
     static constexpr float KnobSize = 21.13f;
 
-    // Knobs: -2mm X, +2mm Y from last position (13.28, 54.34) and (93.43)
-    // Display: moved right and down to sit inside dark box
+    // Calibration build — K1 at exact px(25,102) -> mm(13.55, 54.61)
+    // Red crosshairs at same pixel positions in PNG
+    // K2 at px(75,102) -> mm(40.64, 54.61)
+    // K4 at px(25,171) -> mm(13.55, 91.55)
     static constexpr std::array<MetaModule::Element, 8> Elements {{
         makeKnob   (13.55f, 54.61f, KnobSize, "K1", "Knob 1 Red"),
         makeKnob   (40.64f, 54.61f, KnobSize, "K2", "Knob 2 Orange"),
