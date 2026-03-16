@@ -72,13 +72,15 @@ static constexpr MetaModule::DynamicTextDisplay makeDisplay(
 
 static constexpr MetaModule::MonoLight makeLight(float px, float py,
                                                   uint16_t col,
-                                                  std::string_view sn) {
+                                                  std::string_view sn,
+                                                  std::string_view img) {
     MetaModule::MonoLight light{};
     light.x_mm       = px;
     light.y_mm       = py;
     light.short_name = sn;
     light.long_name  = sn;
     light.color      = RGB565{col};
+    light.image      = img;
     return light;
 }
 
@@ -105,12 +107,12 @@ struct Info : MetaModule::ModuleInfoBase {
         makeKnob   (13.55f,  93.70f, KnobSize, "K4", "Knob 4 Green"),
         makeKnob   (40.64f,  93.70f, KnobSize, "K5", "Knob 5 Blue"),
         makeKnob   (67.74f,  93.70f, KnobSize, "K6", "Knob 6 Purple"),
-        makeDisplay(36.00f,  18.00f, 38.00f,   9.64f, "CCDisp"),   // light 0
-        makeDisplay(30.00f, 115.00f, 44.00f,   7.50f, "SetDisp"),  // light 1
-        makeLight  (20.59f,  26.77f, 0x1BDA, "S1"),                // light 2
-        makeLight  (28.18f,  26.77f, 0x2D0A, "S2"),                // light 3
-        makeLight  (35.77f,  26.77f, 0xE3C4, "S3"),                // light 4
-        makeLight  (43.35f,  26.77f, 0x8218, "S4"),                // light 5
+        makeDisplay(36.00f,  18.00f, 38.00f,   9.64f, "CCDisp"),
+        makeDisplay(30.00f, 115.00f, 44.00f,   7.50f, "SetDisp"),
+        makeLight  (20.59f,  26.77f, 0x1BDA, "S1", "RytmCC/led_blue.png"),
+        makeLight  (28.18f,  26.77f, 0x2D0A, "S2", "RytmCC/led_green.png"),
+        makeLight  (35.77f,  26.77f, 0xE3C4, "S3", "RytmCC/led_orange.png"),
+        makeLight  (43.35f,  26.77f, 0x8218, "S4", "RytmCC/led_violet.png"),
         makeAlt    ("NextSet", "Next Set"),
     }};
 
@@ -144,12 +146,11 @@ public:
     void set_samplerate(float) override {}
 
     void refreshDisplay(uint8_t ccNum, uint8_t midiVal, uint8_t ch) {
-        // Both strings exactly 14 chars — centre never shifts
-        // IDLE:   "CC--- Ready   " = 14
-        // ACTIVE: "CC045 Ch2 ||||" = 14
+        // Both strings exactly 14 chars
+        // IDLE:   "CC--- Ready   "
+        // ACTIVE: "CC045 Ch1 ||||"
         if (ccNum == 255) {
-            snprintf(ccBuf, sizeof(ccBuf),
-                "CC--- Ready   ");
+            snprintf(ccBuf, sizeof(ccBuf), "CC--- Ready   ");
         } else {
             int filled = (midiVal * 4) / 127;
             char bar[5];
