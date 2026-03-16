@@ -9,11 +9,11 @@ endif()
 
 include(${METAMODULE_SDK_DIR}/plugin.cmake)
 
-project(RytmCC VERSION 1.0.0 DESCRIPTION "Rytm CC Controller" LANGUAGES C CXX ASM)
+project(CtrlCC VERSION 1.0.0 DESCRIPTION "Rytm CC Controller" LANGUAGES C CXX ASM)
 
-add_library(RytmCC STATIC src/RytmCC.cpp)
+add_library(CtrlCC STATIC src/CtrlCC.cpp)
 
-target_include_directories(RytmCC PRIVATE src)
+target_include_directories(CtrlCC PRIVATE src)
 
 set(PLUGIN_JSON_PATH ${CMAKE_SOURCE_DIR}/plugin.json)
 message("PLUGIN_JSON_PATH: ${PLUGIN_JSON_PATH}")
@@ -23,9 +23,9 @@ if(NOT EXISTS ${PLUGIN_JSON_PATH})
 endif()
 
 create_plugin(
-    SOURCE_LIB      RytmCC
-    PLUGIN_NAME     RytmCC
+    SOURCE_LIB      CtrlCC
+    PLUGIN_NAME     CtrlCC
     PLUGIN_JSON     ${PLUGIN_JSON_PATH}
     SOURCE_ASSETS   ${CMAKE_SOURCE_DIR}/assets
-    DESTINATION     ${CMAKE_SOURCE_DIR}/metamodule-plugins/RytmCC
+    DESTINATION     ${CMAKE_SOURCE_DIR}/metamodule-plugins/CtrlCC
 )

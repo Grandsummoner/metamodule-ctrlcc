@@ -1,12 +1,12 @@
 {
-  "slug": "RytmCC",
+  "slug": "CtrlCC",
   "name": "Rytm CC Controller",
   "version": "1.0.0",
-  "brand": "RytmCC",
+  "brand": "CtrlCC",
   "author": "you",
   "modules": [
     {
-      "slug": "RytmCC",
+      "slug": "CtrlCC",
       "name": "Rytm CC",
       "description": "6-knob MIDI CC controller for Elektron Analog Rytm MkII",
       "tags": ["MIDI"]

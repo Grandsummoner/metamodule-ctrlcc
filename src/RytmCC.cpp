@@ -29,7 +29,7 @@ static const char* DefaultSetNames[NumSets] = {
     "Set 1", "Set 2", "Set 3", "Set 4"
 };
 
-namespace RytmCC {
+namespace CtrlCC {
 
 static constexpr MetaModule::Knob makeKnob(float px, float py,
                                             float sz,
@@ -88,10 +88,10 @@ static constexpr MetaModule::MonoLight makeLight(float px, float py,
 }
 
 struct Info : MetaModule::ModuleInfoBase {
-    static constexpr std::string_view slug         = "RytmCC";
+    static constexpr std::string_view slug         = "CtrlCC";
     static constexpr std::string_view description  = "6-knob MIDI CC for Elektron Analog Rytm MkII";
     static constexpr uint32_t         width_hp     = 16;
-    static constexpr std::string_view png_filename = "RytmCC/RytmCC.png";
+    static constexpr std::string_view png_filename = "CtrlCC/CtrlCC.png";
     static constexpr std::string_view svg_filename = "";
 
     static constexpr float KnobSize = 15.17f;
@@ -107,10 +107,10 @@ struct Info : MetaModule::ModuleInfoBase {
                     Colors565::White),
         makeDisplay(30.00f, 115.00f, 44.00f,   7.50f, "SetDisp",
                     Colors565::Cyan),
-        makeLight  (20.59f,  26.77f, Colors565::Blue,   "S1", "RytmCC/led_ring.png"),
-        makeLight  (28.18f,  26.77f, Colors565::Green,  "S2", "RytmCC/led_ring.png"),
-        makeLight  (35.77f,  26.77f, Colors565::Orange, "S3", "RytmCC/led_ring.png"),
-        makeLight  (43.35f,  26.77f, Colors565::Purple, "S4", "RytmCC/led_ring.png"),
+        makeLight  (20.59f,  26.77f, Colors565::Blue,   "S1", "CtrlCC/led_ring.png"),
+        makeLight  (28.18f,  26.77f, Colors565::Green,  "S2", "CtrlCC/led_ring.png"),
+        makeLight  (35.77f,  26.77f, Colors565::Orange, "S3", "CtrlCC/led_ring.png"),
+        makeLight  (43.35f,  26.77f, Colors565::Purple, "S4", "CtrlCC/led_ring.png"),
         makeAlt    ("NextSet", "Next Set"),
     }};
 
@@ -328,8 +328,8 @@ private:
     rack::midi::Output midiOut;
 };
 
-} // namespace RytmCC
+} // namespace CtrlCC
 
 extern "C" void init() {
-    MetaModule::register_module<RytmCC::Module, RytmCC::Info>("RytmCC");
+    MetaModule::register_module<CtrlCC::Module, CtrlCC::Info>("CtrlCC");
 }
