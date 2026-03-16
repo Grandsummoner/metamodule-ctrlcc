@@ -84,7 +84,7 @@ struct Info : MetaModule::ModuleInfoBase {
         makeKnob   (13.55f,  93.70f, KnobSize, "K4", "Knob 4 Green"),
         makeKnob   (40.64f,  93.70f, KnobSize, "K5", "Knob 5 Blue"),
         makeKnob   (67.74f,  93.70f, KnobSize, "K6", "Knob 6 Purple"),
-        makeDisplay(36.00f,  18.00f, 38.00f,   9.64f, "CCDisp"),
+        makeDisplay(38.00f,  18.00f, 36.00f,   9.64f, "CCDisp"),
         makeDisplay(30.00f, 115.00f, 44.00f,   7.50f, "SetDisp"),
         makeAlt    ("NextSet", "Next Set"),
     }};
@@ -110,9 +110,11 @@ public:
     void set_samplerate(float) override {}
 
     void refreshDisplay(uint8_t ccNum, uint8_t midiVal) {
+        // Both strings padded to exact same length (16 chars)
+        // so MetaModule text justification doesn't shift position
         if (ccNum == 255) {
             snprintf(ccBuf, sizeof(ccBuf),
-                " Ch%-2d  Ready", midiCh + 1);
+                " Ch%-2d  Ready     ", midiCh + 1);
         } else {
             int filled = (midiVal * 8) / 127;
             char bar[9];
@@ -120,7 +122,7 @@ public:
                 bar[i] = (i < filled) ? '|' : '.';
             bar[8] = 0;
             snprintf(ccBuf, sizeof(ccBuf),
-                " Ch%-2d CC%03d %s",
+                " Ch%-2d CC%03d %s  ",
                 midiCh + 1, ccNum, bar);
         }
         snprintf(setNameBuf, sizeof(setNameBuf),
