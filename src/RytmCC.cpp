@@ -72,20 +72,32 @@ static constexpr MetaModule::DynamicTextDisplay makeDisplay(float px, float py,
 struct Info : MetaModule::ModuleInfoBase {
     static constexpr std::string_view slug         = "RytmCC";
     static constexpr std::string_view description  = "6-knob MIDI CC for Elektron Analog Rytm MkII";
-    static constexpr uint32_t         width_hp     = 16;
+    static constexpr uint32_t         width_hp     = 10;
     static constexpr std::string_view png_filename = "RytmCC/RytmCC.png";
     static constexpr std::string_view svg_filename = "";
 
-    static constexpr float KnobSize = 13.00f;
+    // 10HP = 50.8mm wide, 240px height = 128.5mm tall
+    // 1px X = 50.8/150 = 0.3387mm
+    // 1px Y = 128.5/240 = 0.5354mm
+    // K1: px(25,105) = mm(8.47, 56.22)
+    // K2: px(75,105) = mm(25.40, 56.22)
+    // K3: px(125,105) = mm(42.33, 56.22)
+    // K4: px(25,175) = mm(8.47, 93.70)
+    // K5: px(75,175) = mm(25.40, 93.70)
+    // K6: px(125,175) = mm(42.33, 93.70)
+    // KnobSize: inner circle 14px*2=28px = 28*0.3387 = 9.48mm
+    // Display: px(6,22) w=138 h=28 = mm(2.03,11.78) w=46.77 h=15.00
+
+    static constexpr float KnobSize = 9.48f;
 
     static constexpr std::array<MetaModule::Element, 8> Elements {{
-        makeKnob   (13.55f, 56.22f, KnobSize, "K1", "Knob 1 Red"),
-        makeKnob   (40.64f, 56.22f, KnobSize, "K2", "Knob 2 Orange"),
-        makeKnob   (67.74f, 56.22f, KnobSize, "K3", "Knob 3 Yellow"),
-        makeKnob   (13.55f, 93.70f, KnobSize, "K4", "Knob 4 Green"),
-        makeKnob   (40.64f, 93.70f, KnobSize, "K5", "Knob 5 Blue"),
-        makeKnob   (67.74f, 93.70f, KnobSize, "K6", "Knob 6 Purple"),
-        makeDisplay( 3.25f, 11.78f, 74.78f, 15.00f, "Display"),
+        makeKnob   ( 8.47f, 56.22f, KnobSize, "K1", "Knob 1 Red"),
+        makeKnob   (25.40f, 56.22f, KnobSize, "K2", "Knob 2 Orange"),
+        makeKnob   (42.33f, 56.22f, KnobSize, "K3", "Knob 3 Yellow"),
+        makeKnob   ( 8.47f, 93.70f, KnobSize, "K4", "Knob 4 Green"),
+        makeKnob   (25.40f, 93.70f, KnobSize, "K5", "Knob 5 Blue"),
+        makeKnob   (42.33f, 93.70f, KnobSize, "K6", "Knob 6 Purple"),
+        makeDisplay( 2.03f, 11.78f, 46.77f, 15.00f, "Display"),
         makeAltAction("Set", "Next Set"),
     }};
 
@@ -99,39 +111,45 @@ public:
         for (int s = 0; s < NumSets; s++) {
             for (int k = 0; k < NumKnobs; k++)
                 savedCC[s][k] = DefaultCC[s][k];
-            snprintf(setNames[s], sizeof(setNames[s]), "%s", DefaultSetNames[s]);
+            snprintf(setNames[s], sizeof(setNames[s]),
+                "%s", DefaultSetNames[s]);
         }
         for (int k = 0; k < NumKnobs; k++)
             lastVal[k] = -1.f;
-        updateDisplay(0, 0, 0);
+        snprintf(line1, sizeof(line1), " %-12s", setNames[activeSet]);
+        snprintf(line2, sizeof(line2), " Ch1  Ready");
     }
 
     void set_samplerate(float) override {}
 
-    // Build the single-row display:
-    // "Perf 1-6  Ch1 CC007 ||||||||  "
-    // Line1: set name
-    // Line2: Ch + CC + value bar
-    void updateDisplay(int knobIdx, uint8_t ccNum, uint8_t midiVal) {
-        snprintf(line1, sizeof(line1), "%s", setNames[activeSet]);
+    void buildDisplay(uint8_t ccNum, uint8_t midiVal) {
+        // Line 1: set name centred with padding
+        int nameLen = static_cast<int>(strnlen(setNames[activeSet], 15));
+        int pad = (14 - nameLen) / 2;
+        snprintf(line1, sizeof(line1), "%*s%s",
+            pad + 1, " ", setNames[activeSet]);
 
-        // Value bar: 8 chars, filled proportionally
-        int filled = (midiVal * 8) / 127;
-        char bar[9];
-        for (int i = 0; i < 8; i++)
+        // Line 2: Ch + CC + value bar
+        int filled = (midiVal * 10) / 127;
+        char bar[11];
+        for (int i = 0; i < 10; i++)
             bar[i] = (i < filled) ? '|' : '.';
-        bar[8] = 0;
-
+        bar[10] = 0;
         snprintf(line2, sizeof(line2), "Ch%d CC%03d %s",
             midiCh + 1, ccNum, bar);
     }
 
     void update() override {
-        if (displayTimer > 0) displayTimer--;
-        else {
-            // Idle display — show set name and channel
-            snprintf(line1, sizeof(line1), "%s", setNames[activeSet]);
-            snprintf(line2, sizeof(line2), "Ch%d  Ready", midiCh + 1);
+        if (displayTimer > 0) {
+            displayTimer--;
+        } else {
+            // Idle — show set name and channel
+            int nameLen = static_cast<int>(strnlen(setNames[activeSet], 15));
+            int pad = (14 - nameLen) / 2;
+            snprintf(line1, sizeof(line1), "%*s%s",
+                pad + 1, " ", setNames[activeSet]);
+            snprintf(line2, sizeof(line2), " Ch%d  Ready",
+                midiCh + 1);
         }
 
         for (int k = 0; k < NumKnobs; k++) {
@@ -147,7 +165,7 @@ public:
                 msg.bytes[2] = midiVal;
                 midiOut.sendMessage(msg);
 
-                updateDisplay(k, ccNum, midiVal);
+                buildDisplay(ccNum, midiVal);
                 displayTimer = 48000 * 2;
             }
         }
@@ -157,12 +175,16 @@ public:
         if (id >= 0 && id < Info::NumParams) {
             params[id] = val;
         } else if (id == Info::NumParams) {
-            // AltParamAction — Next Set
             if (val > 0.5f) {
                 activeSet = (activeSet + 1) % NumSets;
                 for (int k = 0; k < NumKnobs; k++) lastVal[k] = -1.f;
-                snprintf(line1, sizeof(line1), "%s", setNames[activeSet]);
-                snprintf(line2, sizeof(line2), "Ch%d  Ready", midiCh + 1);
+                int nameLen = static_cast<int>(
+                    strnlen(setNames[activeSet], 15));
+                int pad = (14 - nameLen) / 2;
+                snprintf(line1, sizeof(line1), "%*s%s",
+                    pad + 1, " ", setNames[activeSet]);
+                snprintf(line2, sizeof(line2), " Ch%d  Ready",
+                    midiCh + 1);
                 displayTimer = 48000 * 2;
             }
         }
@@ -175,7 +197,8 @@ public:
 
     size_t get_display_text(int display_id, std::span<char> buf) override {
         if (display_id != Info::MainDisplay) return 0;
-        int len = snprintf(buf.data(), buf.size(), "%s\n%s", line1, line2);
+        int len = snprintf(buf.data(), buf.size(),
+            "%s\n%s", line1, line2);
         return len > 0 ? static_cast<size_t>(len) : 0;
     }
 
@@ -183,10 +206,10 @@ public:
     float get_output(int) const override { return 0.f; }
 
     // Save format:
-    // Byte 0: active set ('0'-'3')
-    // Byte 1: midi channel (0-15)
-    // Bytes 2..25: CC numbers (4 sets x 6 knobs)
-    // Bytes 26..57: set names (4 x 8 chars, null padded)
+    // [0]   active set '0'-'3'
+    // [1]   midi channel 0-15
+    // [2..25] CC numbers (4 sets x 6 knobs)
+    // [26..57] set names (4 x 8 chars null padded)
     std::string save_state() override {
         std::string out;
         out += static_cast<char>('0' + activeSet);
@@ -207,7 +230,8 @@ public:
         if (sv.empty()) return;
         size_t pos = 0;
 
-        if (pos < sv.size() && sv[pos] >= '0' && sv[pos] < '0' + NumSets)
+        if (pos < sv.size() &&
+            sv[pos] >= '0' && sv[pos] < '0' + NumSets)
             activeSet = sv[pos] - '0';
         pos++;
 
@@ -215,24 +239,28 @@ public:
             midiCh = static_cast<uint8_t>(sv[pos]) & 0x0F;
         pos++;
 
-        // CC numbers
         for (int s = 0; s < NumSets && pos < sv.size(); s++)
             for (int k = 0; k < NumKnobs && pos < sv.size(); k++, pos++)
                 savedCC[s][k] = static_cast<uint8_t>(sv[pos]);
 
-        // Set names
         for (int s = 0; s < NumSets && pos + 8 <= sv.size(); s++, pos += 8) {
             char buf[9] = {};
-            for (int i = 0; i < 8; i++)
-                buf[i] = sv[pos + i];
+            for (int i = 0; i < 8; i++) buf[i] = sv[pos + i];
             buf[8] = 0;
-            // Strip null padding
-            snprintf(setNames[s], sizeof(setNames[s]), "%s", buf);
+            // Only copy if non-empty
+            bool hasContent = false;
+            for (int i = 0; i < 8; i++)
+                if (buf[i] > 0x20) { hasContent = true; break; }
+            if (hasContent)
+                snprintf(setNames[s], sizeof(setNames[s]), "%s", buf);
         }
 
         for (int k = 0; k < NumKnobs; k++) lastVal[k] = -1.f;
-        snprintf(line1, sizeof(line1), "%s", setNames[activeSet]);
-        snprintf(line2, sizeof(line2), "Ch%d  Loaded", midiCh + 1);
+        int nameLen = static_cast<int>(strnlen(setNames[activeSet], 15));
+        int pad = (14 - nameLen) / 2;
+        snprintf(line1, sizeof(line1), "%*s%s",
+            pad + 1, " ", setNames[activeSet]);
+        snprintf(line2, sizeof(line2), " Ch%d  Loaded", midiCh + 1);
         displayTimer = 48000 * 2;
     }
 
