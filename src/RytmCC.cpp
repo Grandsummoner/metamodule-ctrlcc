@@ -138,32 +138,37 @@ public:
         }
         for (int k = 0; k < NumKnobs; k++)
             lastVal[k] = -1.f;
-        refreshDisplay(255, 0);
+        refreshDisplay(255, 0, 0);
     }
 
     void set_samplerate(float) override {}
 
-    void refreshDisplay(uint8_t ccNum, uint8_t midiVal) {
-        // Fixed 14 char strings — centre never shifts
+    void refreshDisplay(uint8_t ccNum, uint8_t midiVal, uint8_t ch) {
+        // Both strings exactly 14 chars — centre never shifts
+        // IDLE:   "CC--- Ready   " = 14
+        // ACTIVE: "CC045 Ch2 ||||" = 14
         if (ccNum == 255) {
-            snprintf(ccBuf, sizeof(ccBuf), "CC--- Ready   ");
+            snprintf(ccBuf, sizeof(ccBuf),
+                "CC--- Ready   ");
         } else {
-            int filled = (midiVal * 8) / 127;
-            char bar[9];
-            for (int i = 0; i < 8; i++)
+            int filled = (midiVal * 4) / 127;
+            char bar[5];
+            for (int i = 0; i < 4; i++)
                 bar[i] = (i < filled) ? '|' : '.';
-            bar[8] = 0;
-            snprintf(ccBuf, sizeof(ccBuf), "CC%03d %s", ccNum, bar);
+            bar[4] = 0;
+            snprintf(ccBuf, sizeof(ccBuf),
+                "CC%03d Ch%-2d %s",
+                ccNum, ch + 1, bar);
         }
-        // Set name padded to 14 chars
-        snprintf(setNameBuf, sizeof(setNameBuf), "%-14s", setNames[activeSet]);
+        snprintf(setNameBuf, sizeof(setNameBuf),
+            "%-14s", setNames[activeSet]);
     }
 
     void update() override {
         if (displayTimer > 0) {
             displayTimer--;
             if (displayTimer == 0)
-                refreshDisplay(255, 0);
+                refreshDisplay(255, 0, 0);
         }
 
         for (int k = 0; k < NumKnobs; k++) {
@@ -181,7 +186,7 @@ public:
                 msg.bytes[2] = midiVal;
                 midiOut.sendMessage(msg);
 
-                refreshDisplay(ccNum, midiVal);
+                refreshDisplay(ccNum, midiVal, ch);
                 displayTimer = 48000 * 2;
             }
         }
@@ -194,7 +199,7 @@ public:
             if (val > 0.5f) {
                 activeSet = (activeSet + 1) % NumSets;
                 for (int k = 0; k < NumKnobs; k++) lastVal[k] = -1.f;
-                refreshDisplay(255, 0);
+                refreshDisplay(255, 0, 0);
                 displayTimer = 48000 * 2;
             }
         }
@@ -273,7 +278,7 @@ public:
         }
 
         for (int k = 0; k < NumKnobs; k++) lastVal[k] = -1.f;
-        refreshDisplay(255, 0);
+        refreshDisplay(255, 0, 0);
         displayTimer = 48000 * 2;
     }
 
