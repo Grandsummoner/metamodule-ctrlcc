@@ -77,9 +77,9 @@ struct Info : MetaModule::ModuleInfoBase {
 
     static constexpr float KnobSize = 15.17f;
 
-    // Top display: px(6,22) w=138 h=18 -> mm(3.25,11.78) w=74.78 h=9.64
-    // Bottom display: px(6,208) w=138 h=14 -> mm(3.25,111.37) w=74.78 h=7.50
-    // Knobs: cx=25,75,125 cy=105,175
+    // CALIBRATION BUILD — displays at extreme x=20mm
+    // Next build will try x=40mm
+    // Comparing photos will tell us exact text coordinate system
     static constexpr std::array<MetaModule::Element, 9> Elements {{
         makeKnob   (13.55f,  56.22f, KnobSize, "K1", "Knob 1 Red"),
         makeKnob   (40.64f,  56.22f, KnobSize, "K2", "Knob 2 Orange"),
@@ -87,8 +87,8 @@ struct Info : MetaModule::ModuleInfoBase {
         makeKnob   (13.55f,  93.70f, KnobSize, "K4", "Knob 4 Green"),
         makeKnob   (40.64f,  93.70f, KnobSize, "K5", "Knob 5 Blue"),
         makeKnob   (67.74f,  93.70f, KnobSize, "K6", "Knob 6 Purple"),
-        makeDisplay( 3.25f,  11.78f, 74.78f,   9.64f, "CCDisp"),
-        makeDisplay( 3.25f, 111.37f, 74.78f,   7.50f, "SetDisp"),
+        makeDisplay(20.00f,  11.78f, 50.00f,   9.64f, "CCDisp"),
+        makeDisplay(20.00f, 111.37f, 50.00f,   7.50f, "SetDisp"),
         makeAlt    ("NextSet", "Next Set"),
     }};
 
@@ -113,12 +113,9 @@ public:
     void set_samplerate(float) override {}
 
     void refreshDisplay(uint8_t ccNum, uint8_t midiVal) {
-        // Top display: Ch + CC + value bar on one line
-        // Pad to ~20 chars to fill the box
         if (ccNum == 255) {
             snprintf(ccBuf, sizeof(ccBuf),
-                "Ch%-2d  Ready        ",
-                midiCh + 1);
+                "Ch%-2d  Ready", midiCh + 1);
         } else {
             int filled = (midiVal * 8) / 127;
             char bar[9];
@@ -129,9 +126,8 @@ public:
                 "Ch%-2d CC%03d %s",
                 midiCh + 1, ccNum, bar);
         }
-        // Bottom display: set name centred
         snprintf(setNameBuf, sizeof(setNameBuf),
-            "  %s", setNames[activeSet]);
+            "%s", setNames[activeSet]);
     }
 
     void update() override {
