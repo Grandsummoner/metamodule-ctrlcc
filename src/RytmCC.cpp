@@ -91,6 +91,13 @@ struct Info : MetaModule::ModuleInfoBase {
 
     static constexpr float KnobSize = 15.17f;
 
+    // Light indices:
+    // CCDisp  -> light 0
+    // SetDisp -> light 1
+    // S1      -> light 2
+    // S2      -> light 3
+    // S3      -> light 4
+    // S4      -> light 5
     static constexpr std::array<MetaModule::Element, 13> Elements {{
         makeKnob   (13.55f,  56.22f, KnobSize, "K1", "Knob 1 Red"),
         makeKnob   (40.64f,  56.22f, KnobSize, "K2", "Knob 2 Orange"),
@@ -98,17 +105,24 @@ struct Info : MetaModule::ModuleInfoBase {
         makeKnob   (13.55f,  93.70f, KnobSize, "K4", "Knob 4 Green"),
         makeKnob   (40.64f,  93.70f, KnobSize, "K5", "Knob 5 Blue"),
         makeKnob   (67.74f,  93.70f, KnobSize, "K6", "Knob 6 Purple"),
-        makeDisplay( 3.25f,  18.00f, 74.78f,   9.64f, "CCDisp"),
-        makeDisplay( 3.25f, 115.00f, 74.78f,   7.50f, "SetDisp"),
-        makeLight  (20.59f,  26.77f, 0x1BDA, "S1"),  // Blue
-        makeLight  (28.18f,  26.77f, 0x2D0A, "S2"),  // Green
-        makeLight  (35.77f,  26.77f, 0xE3C4, "S3"),  // Orange
-        makeLight  (43.35f,  26.77f, 0x8218, "S4"),  // Violet
+        makeDisplay(36.00f,  18.00f, 38.00f,   9.64f, "CCDisp"),   // light 0
+        makeDisplay(30.00f, 115.00f, 44.00f,   7.50f, "SetDisp"),  // light 1
+        makeLight  (20.59f,  26.77f, 0x1BDA, "S1"),                // light 2
+        makeLight  (28.18f,  26.77f, 0x2D0A, "S2"),                // light 3
+        makeLight  (35.77f,  26.77f, 0xE3C4, "S3"),                // light 4
+        makeLight  (43.35f,  26.77f, 0x8218, "S4"),                // light 5
         makeAlt    ("NextSet", "Next Set"),
     }};
 
-    enum Params  { K1, K2, K3, K4, K5, K6, NumParams };
-    enum Lights  { CCDisplay, SetDisplay, SetLight1, SetLight2, SetLight3, SetLight4 };
+    enum Params { K1, K2, K3, K4, K5, K6, NumParams };
+    enum Lights {
+        CCDisplay  = 0,
+        SetDisplay = 1,
+        SetLight1  = 2,
+        SetLight2  = 3,
+        SetLight3  = 4,
+        SetLight4  = 5
+    };
 };
 
 class Module : public CoreProcessor {
@@ -124,34 +138,32 @@ public:
         }
         for (int k = 0; k < NumKnobs; k++)
             lastVal[k] = -1.f;
-        refreshDisplay(255, 0, 0);
+        refreshDisplay(255, 0);
     }
 
     void set_samplerate(float) override {}
 
-    void refreshDisplay(uint8_t ccNum, uint8_t midiVal, uint8_t ch) {
+    void refreshDisplay(uint8_t ccNum, uint8_t midiVal) {
+        // Fixed 14 char strings — centre never shifts
         if (ccNum == 255) {
-            snprintf(ccBuf, sizeof(ccBuf),
-                "Ch%-2d  Ready         ", ch + 1);
+            snprintf(ccBuf, sizeof(ccBuf), "CC--- Ready   ");
         } else {
             int filled = (midiVal * 8) / 127;
             char bar[9];
             for (int i = 0; i < 8; i++)
                 bar[i] = (i < filled) ? '|' : '.';
             bar[8] = 0;
-            snprintf(ccBuf, sizeof(ccBuf),
-                "Ch%-2d CC%03d %s      ",
-                ch + 1, ccNum, bar);
+            snprintf(ccBuf, sizeof(ccBuf), "CC%03d %s", ccNum, bar);
         }
-        snprintf(setNameBuf, sizeof(setNameBuf),
-            "%-18s", setNames[activeSet]);
+        // Set name padded to 14 chars
+        snprintf(setNameBuf, sizeof(setNameBuf), "%-14s", setNames[activeSet]);
     }
 
     void update() override {
         if (displayTimer > 0) {
             displayTimer--;
             if (displayTimer == 0)
-                refreshDisplay(255, 0, savedCh[activeSet][0]);
+                refreshDisplay(255, 0);
         }
 
         for (int k = 0; k < NumKnobs; k++) {
@@ -169,7 +181,7 @@ public:
                 msg.bytes[2] = midiVal;
                 midiOut.sendMessage(msg);
 
-                refreshDisplay(ccNum, midiVal, ch);
+                refreshDisplay(ccNum, midiVal);
                 displayTimer = 48000 * 2;
             }
         }
@@ -182,7 +194,7 @@ public:
             if (val > 0.5f) {
                 activeSet = (activeSet + 1) % NumSets;
                 for (int k = 0; k < NumKnobs; k++) lastVal[k] = -1.f;
-                refreshDisplay(255, 0, savedCh[activeSet][0]);
+                refreshDisplay(255, 0);
                 displayTimer = 48000 * 2;
             }
         }
@@ -261,7 +273,7 @@ public:
         }
 
         for (int k = 0; k < NumKnobs; k++) lastVal[k] = -1.f;
-        refreshDisplay(255, 0, savedCh[activeSet][0]);
+        refreshDisplay(255, 0);
         displayTimer = 48000 * 2;
     }
 
