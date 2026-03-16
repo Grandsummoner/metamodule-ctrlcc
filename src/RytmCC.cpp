@@ -144,12 +144,13 @@ public:
 
     void refreshDisplay(uint8_t ccNum, uint8_t midiVal, uint8_t ch) {
         // Both strings exactly 14 chars
-        // IDLE:   "C-- --- Ready " = 14
+        // IDLE:   "Ready!        " = 14
         // ACTIVE: "C01 007 ||||||" = 14
         if (ccNum == 255) {
-            snprintf(ccBuf, sizeof(ccBuf), "C-- --- Ready ");
+            snprintf(ccBuf, sizeof(ccBuf), "Ready!        ");
         } else {
-            int filled = (midiVal * 6) / 127;
+            int filled = (int)((midiVal * 6.0f) / 127.0f + 0.5f);
+            if (filled > 6) filled = 6;
             char bar[7];
             for (int i = 0; i < 6; i++)
                 bar[i] = (i < filled) ? '|' : '.';
