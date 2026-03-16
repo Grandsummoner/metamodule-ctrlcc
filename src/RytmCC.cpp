@@ -58,7 +58,8 @@ static constexpr MetaModule::AltParamAction makeAlt(std::string_view sn,
 }
 
 static constexpr MetaModule::DynamicTextDisplay makeDisplay(
-    float px, float py, float w, float h, std::string_view sn) {
+    float px, float py, float w, float h, std::string_view sn,
+    RGB565 col = Colors565::White) {
     MetaModule::DynamicTextDisplay disp{};
     disp.x_mm       = px;
     disp.y_mm       = py;
@@ -67,11 +68,12 @@ static constexpr MetaModule::DynamicTextDisplay makeDisplay(
     disp.short_name = sn;
     disp.long_name  = sn;
     disp.wrap_mode  = MetaModule::TextDisplay::WrapMode::Clip;
+    disp.color      = col;
     return disp;
 }
 
 static constexpr MetaModule::MonoLight makeLight(float px, float py,
-                                                  uint16_t col,
+                                                  RGB565 col,
                                                   std::string_view sn,
                                                   std::string_view img) {
     MetaModule::MonoLight light{};
@@ -79,7 +81,7 @@ static constexpr MetaModule::MonoLight makeLight(float px, float py,
     light.y_mm       = py;
     light.short_name = sn;
     light.long_name  = sn;
-    light.color      = RGB565{col};
+    light.color      = col;
     light.image      = img;
     return light;
 }
@@ -100,12 +102,14 @@ struct Info : MetaModule::ModuleInfoBase {
         makeKnob   (13.55f,  93.70f, KnobSize, "K4", "Knob 4 Green"),     // row 4
         makeKnob   (40.64f,  93.70f, KnobSize, "K5", "Knob 5 Blue"),      // row 5
         makeKnob   (67.74f,  93.70f, KnobSize, "K6", "Knob 6 Purple"),    // row 6
-        makeDisplay(39.00f,  18.00f, 35.00f,   9.64f, "CCDisp"),          // row 7
-        makeDisplay(30.00f, 115.00f, 44.00f,   7.50f, "SetDisp"),         // row 8
-        makeLight  (20.59f,  26.77f, 0xFFFF, "S1", "RytmCC/led_ring.png"), // row 9
-        makeLight  (28.18f,  26.77f, 0xFFFF, "S2", "RytmCC/led_ring.png"), // row 10
-        makeLight  (35.77f,  26.77f, 0xFFFF, "S3", "RytmCC/led_ring.png"), // row 11
-        makeLight  (43.35f,  26.77f, 0xFFFF, "S4", "RytmCC/led_ring.png"), // row 12
+        makeDisplay(39.00f,  18.00f, 35.00f,   9.64f, "CCDisp",
+                    Colors565::White),                                      // row 7
+        makeDisplay(30.00f, 115.00f, 44.00f,   7.50f, "SetDisp",
+                    Colors565::Cyan),                                       // row 8
+        makeLight  (20.59f,  26.77f, Colors565::Blue,   "S1", "RytmCC/led_ring.png"), // row 9
+        makeLight  (28.18f,  26.77f, Colors565::Green,  "S2", "RytmCC/led_ring.png"), // row 10
+        makeLight  (35.77f,  26.77f, Colors565::Orange, "S3", "RytmCC/led_ring.png"), // row 11
+        makeLight  (43.35f,  26.77f, Colors565::Purple, "S4", "RytmCC/led_ring.png"), // row 12
         makeAlt    ("NextSet", "Next Set"),                                // row 13
     }};
 
@@ -140,19 +144,19 @@ public:
 
     void refreshDisplay(uint8_t ccNum, uint8_t midiVal, uint8_t ch) {
         // Both strings exactly 14 chars
-        // IDLE:   "CC--- Ready   "
-        // ACTIVE: "CC045 Ch1 ||||"
+        // IDLE:   "C-- --- Ready " = 14
+        // ACTIVE: "C01 007 ||||||" = 14
         if (ccNum == 255) {
-            snprintf(ccBuf, sizeof(ccBuf), "CC--- Ready   ");
+            snprintf(ccBuf, sizeof(ccBuf), "C-- --- Ready ");
         } else {
-            int filled = (midiVal * 4) / 127;
-            char bar[5];
-            for (int i = 0; i < 4; i++)
+            int filled = (midiVal * 6) / 127;
+            char bar[7];
+            for (int i = 0; i < 6; i++)
                 bar[i] = (i < filled) ? '|' : '.';
-            bar[4] = 0;
+            bar[6] = 0;
             snprintf(ccBuf, sizeof(ccBuf),
-                "CC%03d Ch%-2d %s",
-                ccNum, ch + 1, bar);
+                "C%02d %03d %s",
+                ch + 1, ccNum, bar);
         }
         snprintf(setNameBuf, sizeof(setNameBuf),
             "%-14s", setNames[activeSet]);
@@ -205,7 +209,6 @@ public:
     }
 
     float get_led_brightness(int led_id) const override {
-        // Active set = ring visible (1.0), others = ring hidden (0.0)
         if (led_id == Info::SetLight1) return activeSet == 0 ? 1.0f : 0.0f;
         if (led_id == Info::SetLight2) return activeSet == 1 ? 1.0f : 0.0f;
         if (led_id == Info::SetLight3) return activeSet == 2 ? 1.0f : 0.0f;
