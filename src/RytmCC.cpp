@@ -138,15 +138,13 @@ public:
         }
         for (int k = 0; k < NumKnobs; k++)
             lastVal[k] = -1.f;
+        midiOut.setChannel(0);
         refreshDisplay(255, 0, 0);
     }
 
     void set_samplerate(float) override {}
 
     void refreshDisplay(uint8_t ccNum, uint8_t midiVal, uint8_t ch) {
-        // Both strings exactly 14 chars
-        // IDLE:   "Ready!        " = 14
-        // ACTIVE: "C01 007 ||||||" = 14
         if (ccNum == 255) {
             snprintf(ccBuf, sizeof(ccBuf), "Ready!        ");
         } else {
@@ -180,9 +178,10 @@ public:
                 uint8_t midiVal = static_cast<uint8_t>(v * 127.f) & 0x7F;
 
                 rack::midi::Message msg;
-                msg.bytes[0] = static_cast<uint8_t>(0xB0 | (ch & 0x0F));
+                msg.bytes[0] = 0xB0; // CC status, channel set via setChannel
                 msg.bytes[1] = ccNum & 0x7F;
                 msg.bytes[2] = midiVal;
+                midiOut.setChannel(ch); // set correct channel before each send
                 midiOut.sendMessage(msg);
 
                 refreshDisplay(ccNum, midiVal, ch);
@@ -231,16 +230,11 @@ public:
     float get_output(int) const override { return 0.f; }
 
     std::string save_state() override {
-        // Format: activeSet|cc[s0]|cc[s1]|cc[s2]|cc[s3]|ch[s0]|ch[s1]|ch[s2]|ch[s3]|name0|name1|name2|name3
-        // Each cc/ch group: 6 comma-separated decimal numbers
-        // All printable ASCII — YAML and WiFi safe
         char buf[512] = {};
         int pos = 0;
 
-        // active set
         pos += snprintf(buf + pos, sizeof(buf) - pos, "%d", activeSet);
 
-        // CC numbers (4 sets × 6 knobs)
         for (int s = 0; s < NumSets; s++) {
             buf[pos++] = '|';
             for (int k = 0; k < NumKnobs; k++) {
@@ -249,7 +243,6 @@ public:
             }
         }
 
-        // MIDI channels (4 sets × 6 knobs)
         for (int s = 0; s < NumSets; s++) {
             buf[pos++] = '|';
             for (int k = 0; k < NumKnobs; k++) {
@@ -258,7 +251,6 @@ public:
             }
         }
 
-        // Set names (pipe and comma stripped, max 8 chars each)
         for (int s = 0; s < NumSets; s++) {
             buf[pos++] = '|';
             for (int i = 0; i < 8 && setNames[s][i]; i++) {
@@ -273,7 +265,6 @@ public:
     void load_state(std::string_view sv) override {
         if (sv.empty()) return;
 
-        // Split into 13 pipe-delimited fields
         char fields[13][64] = {};
         int fi = 0, ci = 0;
         for (size_t i = 0; i <= sv.size() && fi < 13; i++) {
@@ -286,13 +277,11 @@ public:
                 fields[fi][ci++] = c;
             }
         }
-        if (fi < 9) return; // need activeSet + 4 cc groups + 4 ch groups
+        if (fi < 9) return;
 
-        // Field 0: active set
         int as = fields[0][0] - '0';
         if (as >= 0 && as < NumSets) activeSet = as;
 
-        // Fields 1-4: CC numbers per set
         for (int s = 0; s < NumSets && (s + 1) < fi; s++) {
             const char* p = fields[s + 1];
             for (int k = 0; k < NumKnobs; k++) {
@@ -303,7 +292,6 @@ public:
             }
         }
 
-        // Fields 5-8: MIDI channels per set
         for (int s = 0; s < NumSets && (s + 5) < fi; s++) {
             const char* p = fields[s + 5];
             for (int k = 0; k < NumKnobs; k++) {
@@ -314,7 +302,6 @@ public:
             }
         }
 
-        // Fields 9-12: set names
         for (int s = 0; s < NumSets && (s + 9) < fi; s++) {
             if (fields[s + 9][0]) {
                 snprintf(setNames[s], sizeof(setNames[s]),
@@ -323,6 +310,7 @@ public:
         }
 
         for (int k = 0; k < NumKnobs; k++) lastVal[k] = -1.f;
+        midiOut.setChannel(0);
         refreshDisplay(255, 0, 0);
         displayTimer = 48000 * 2;
     }
