@@ -29,16 +29,7 @@ jobs:
           git clone --depth=1 --recurse-submodules \
             https://github.com/4ms/metamodule-plugin-sdk.git \
             metamodule-plugin-sdk
-
-      - name: Inspect element counting
-        run: |
-          echo "=== DynamicTextDisplay NumLights ==="
-          grep -A 5 "struct DynamicTextDisplay" metamodule-plugin-sdk/core-interface/CoreModules/elements/base_element.hh
-          echo "=== element_counter.hh ==="
-          cat metamodule-plugin-sdk/core-interface/CoreModules/elements/element_counter.hh
-          echo "=== element_info.hh ==="
-          cat metamodule-plugin-sdk/core-interface/CoreModules/elements/element_info.hh
-
+      
       - name: Create empty assets dir
         run: mkdir -p assets
 
