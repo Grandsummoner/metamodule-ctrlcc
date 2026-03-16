@@ -3,7 +3,6 @@
 #include "CoreModules/elements/elements.hh"
 #include "CoreModules/elements/element_counter.hh"
 #include "CoreModules/elements/element_info.hh"
-#include "CoreModules/elements/colors.hh"
 #include "midi.hpp"
 
 #include <array>
@@ -72,14 +71,14 @@ static constexpr MetaModule::DynamicTextDisplay makeDisplay(
 }
 
 static constexpr MetaModule::MonoLight makeLight(float px, float py,
-                                                  MetaModule::RGB565 col,
+                                                  uint16_t col,
                                                   std::string_view sn) {
     MetaModule::MonoLight light{};
-    light.x_mm      = px;
-    light.y_mm      = py;
+    light.x_mm       = px;
+    light.y_mm       = py;
     light.short_name = sn;
     light.long_name  = sn;
-    light.color      = col;
+    light.color      = MetaModule::RGB565{col};
     return light;
 }
 
@@ -93,9 +92,7 @@ struct Info : MetaModule::ModuleInfoBase {
     static constexpr float KnobSize = 15.17f;
 
     // SET dots in PNG at px(38,50) px(52,50) px(66,50) px(80,50)
-    // mm: x=38*0.5419=20.59, x=52*0.5419=28.18
-    //     x=66*0.5419=35.77, x=80*0.5419=43.35
-    // y=50*0.5354=26.77mm
+    // mm: x=20.59, 28.18, 35.77, 43.35  y=26.77
     static constexpr std::array<MetaModule::Element, 13> Elements {{
         makeKnob   (13.55f,  56.22f, KnobSize, "K1", "Knob 1 Red"),
         makeKnob   (40.64f,  56.22f, KnobSize, "K2", "Knob 2 Orange"),
@@ -105,10 +102,10 @@ struct Info : MetaModule::ModuleInfoBase {
         makeKnob   (67.74f,  93.70f, KnobSize, "K6", "Knob 6 Purple"),
         makeDisplay( 3.25f,  18.00f, 74.78f,   9.64f, "CCDisp"),
         makeDisplay( 3.25f, 115.00f, 74.78f,   7.50f, "SetDisp"),
-        makeLight  (20.59f,  26.77f, MetaModule::Colors565::Blue,   "S1"),
-        makeLight  (28.18f,  26.77f, MetaModule::Colors565::Green,  "S2"),
-        makeLight  (35.77f,  26.77f, MetaModule::Colors565::Orange, "S3"),
-        makeLight  (43.35f,  26.77f, MetaModule::Colors565::Violet, "S4"),
+        makeLight  (20.59f,  26.77f, 0x1BDA, "S1"),  // Blue
+        makeLight  (28.18f,  26.77f, 0x2D0A, "S2"),  // Green
+        makeLight  (35.77f,  26.77f, 0xE3C4, "S3"),  // Orange
+        makeLight  (43.35f,  26.77f, 0x8218, "S4"),  // Violet
         makeAlt    ("NextSet", "Next Set"),
     }};
 
@@ -156,8 +153,7 @@ public:
         if (displayTimer > 0) {
             displayTimer--;
             if (displayTimer == 0)
-                refreshDisplay(255, 0,
-                    savedCh[activeSet][0]);
+                refreshDisplay(255, 0, savedCh[activeSet][0]);
         }
 
         for (int k = 0; k < NumKnobs; k++) {
@@ -199,7 +195,6 @@ public:
         return 0.f;
     }
 
-    // Light brightness — active set dot = 1.0, others = 0.0
     float get_led_brightness(int led_id) const override {
         if (led_id == Info::SetLight1) return activeSet == 0 ? 1.f : 0.f;
         if (led_id == Info::SetLight2) return activeSet == 1 ? 1.f : 0.f;
@@ -221,11 +216,6 @@ public:
     void set_input(int, float) override {}
     float get_output(int) const override { return 0.f; }
 
-    // Save format:
-    // [0]   active set '0'-'3'
-    // [1..24]  CC numbers (4 sets x 6 knobs)
-    // [25..48] MIDI channels (4 sets x 6 knobs)
-    // [49..80] set names (4 x 8 chars)
     std::string save_state() override {
         std::string out;
         out += static_cast<char>('0' + activeSet);
