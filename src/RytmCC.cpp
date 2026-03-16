@@ -93,13 +93,6 @@ struct Info : MetaModule::ModuleInfoBase {
 
     static constexpr float KnobSize = 15.17f;
 
-    // Light indices:
-    // CCDisp  -> light 0
-    // SetDisp -> light 1
-    // S1      -> light 2
-    // S2      -> light 3
-    // S3      -> light 4
-    // S4      -> light 5
     static constexpr std::array<MetaModule::Element, 13> Elements {{
         makeKnob   (13.55f,  56.22f, KnobSize, "K1", "Knob 1 Red"),
         makeKnob   (40.64f,  56.22f, KnobSize, "K2", "Knob 2 Orange"),
@@ -107,7 +100,7 @@ struct Info : MetaModule::ModuleInfoBase {
         makeKnob   (13.55f,  93.70f, KnobSize, "K4", "Knob 4 Green"),
         makeKnob   (40.64f,  93.70f, KnobSize, "K5", "Knob 5 Blue"),
         makeKnob   (67.74f,  93.70f, KnobSize, "K6", "Knob 6 Purple"),
-        makeDisplay(36.00f,  18.00f, 38.00f,   9.64f, "CCDisp"),
+        makeDisplay(39.00f,  18.00f, 35.00f,   6.00f, "CCDisp"),
         makeDisplay(30.00f, 115.00f, 44.00f,   7.50f, "SetDisp"),
         makeLight  (20.59f,  26.77f, 0x1BDA, "S1", "RytmCC/led_blue.png"),
         makeLight  (28.18f,  26.77f, 0x2D0A, "S2", "RytmCC/led_green.png"),
@@ -146,9 +139,6 @@ public:
     void set_samplerate(float) override {}
 
     void refreshDisplay(uint8_t ccNum, uint8_t midiVal, uint8_t ch) {
-        // Both strings exactly 14 chars
-        // IDLE:   "CC--- Ready   "
-        // ACTIVE: "CC045 Ch1 ||||"
         if (ccNum == 255) {
             snprintf(ccBuf, sizeof(ccBuf), "CC--- Ready   ");
         } else {
@@ -212,10 +202,11 @@ public:
     }
 
     float get_led_brightness(int led_id) const override {
-        if (led_id == Info::SetLight1) return activeSet == 0 ? 1.f : 0.f;
-        if (led_id == Info::SetLight2) return activeSet == 1 ? 1.f : 0.f;
-        if (led_id == Info::SetLight3) return activeSet == 2 ? 1.f : 0.f;
-        if (led_id == Info::SetLight4) return activeSet == 3 ? 1.f : 0.f;
+        // Active set = full brightness, others = dim
+        if (led_id == Info::SetLight1) return activeSet == 0 ? 1.0f : 0.15f;
+        if (led_id == Info::SetLight2) return activeSet == 1 ? 1.0f : 0.15f;
+        if (led_id == Info::SetLight3) return activeSet == 2 ? 1.0f : 0.15f;
+        if (led_id == Info::SetLight4) return activeSet == 3 ? 1.0f : 0.15f;
         return 0.f;
     }
 
