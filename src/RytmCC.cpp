@@ -47,23 +47,16 @@ static constexpr MetaModule::Knob makeKnob(float px, float py,
     return knob;
 }
 
-static constexpr MetaModule::MomentaryButton makeBtn(float px, float py,
-                                                      float w, float h,
-                                                      std::string_view sn,
-                                                      std::string_view ln) {
-    MetaModule::MomentaryButton btn{};
-    btn.x_mm       = px;
-    btn.y_mm       = py;
-    btn.width_mm   = w;
-    btn.height_mm  = h;
-    btn.short_name = sn;
-    btn.long_name  = ln;
-    return btn;
+static constexpr MetaModule::AltParamAction makeAlt(std::string_view sn,
+                                                     std::string_view ln) {
+    MetaModule::AltParamAction act{};
+    act.short_name = sn;
+    act.long_name  = ln;
+    return act;
 }
 
-static constexpr MetaModule::DynamicTextDisplay makeDisplay(float px, float py,
-                                                             float w, float h,
-                                                             std::string_view sn) {
+static constexpr MetaModule::DynamicTextDisplay makeDisplay(
+    float px, float py, float w, float h, std::string_view sn) {
     MetaModule::DynamicTextDisplay disp{};
     disp.x_mm       = px;
     disp.y_mm       = py;
@@ -71,7 +64,7 @@ static constexpr MetaModule::DynamicTextDisplay makeDisplay(float px, float py,
     disp.height_mm  = h;
     disp.short_name = sn;
     disp.long_name  = sn;
-    disp.wrap_mode  = MetaModule::TextDisplay::WrapMode::Wrap;
+    disp.wrap_mode  = MetaModule::TextDisplay::WrapMode::Clip;
     return disp;
 }
 
@@ -82,19 +75,11 @@ struct Info : MetaModule::ModuleInfoBase {
     static constexpr std::string_view png_filename = "RytmCC/RytmCC.png";
     static constexpr std::string_view svg_filename = "";
 
-    // Back to 16HP = 81.28mm wide
-    // PNG 150x240px
-    // 1px X = 81.28/150 = 0.5419mm
-    // 1px Y = 128.5/240 = 0.5354mm
-    // Knob centres from PNG: cx=25,75,125 cy=105,175
-    // mm: K1(13.55,56.22) K2(40.64,56.22) K3(67.74,56.22)
-    //     K4(13.55,93.70) K5(40.64,93.70) K6(67.74,93.70)
-    // KnobSize = inner circle 14px diameter*2 = 28*0.5419 = 15.17mm
-    // Display px(6,22) w=138 h=28: mm(3.25,11.78) w=74.78 h=15.00
-    // Next Set button px(40,212) w=70 h=14: mm(21.68,113.50) w=37.93 h=7.50
-
     static constexpr float KnobSize = 15.17f;
 
+    // Top display: px(6,22) w=138 h=18 -> mm(3.25,11.78) w=74.78 h=9.64
+    // Bottom display: px(6,208) w=138 h=14 -> mm(3.25,111.37) w=74.78 h=7.50
+    // Knobs: cx=25,75,125 cy=105,175
     static constexpr std::array<MetaModule::Element, 9> Elements {{
         makeKnob   (13.55f,  56.22f, KnobSize, "K1", "Knob 1 Red"),
         makeKnob   (40.64f,  56.22f, KnobSize, "K2", "Knob 2 Orange"),
@@ -102,13 +87,13 @@ struct Info : MetaModule::ModuleInfoBase {
         makeKnob   (13.55f,  93.70f, KnobSize, "K4", "Knob 4 Green"),
         makeKnob   (40.64f,  93.70f, KnobSize, "K5", "Knob 5 Blue"),
         makeKnob   (67.74f,  93.70f, KnobSize, "K6", "Knob 6 Purple"),
-        makeDisplay( 3.25f,  11.78f, 74.78f,  15.00f, "Display"),
-        makeBtn    (21.68f, 113.50f, 37.93f,   7.50f, "NextSet", "Next Set"),
-        makeDisplay( 3.25f, 109.00f, 74.78f,   7.50f, "SetName"),
+        makeDisplay( 3.25f,  11.78f, 74.78f,   9.64f, "CCDisp"),
+        makeDisplay( 3.25f, 111.37f, 74.78f,   7.50f, "SetDisp"),
+        makeAlt    ("NextSet", "Next Set"),
     }};
 
-    enum Params  { K1, K2, K3, K4, K5, K6, NextSetBtn, NumParams };
-    enum Lights  { MainDisplay, SetNameDisplay };
+    enum Params  { K1, K2, K3, K4, K5, K6, NumParams };
+    enum Lights  { CCDisplay, SetDisplay };
 };
 
 class Module : public CoreProcessor {
@@ -122,44 +107,39 @@ public:
         }
         for (int k = 0; k < NumKnobs; k++)
             lastVal[k] = -1.f;
-        buildIdleDisplay();
+        refreshDisplay(255, 0);
     }
 
     void set_samplerate(float) override {}
 
-    void buildIdleDisplay() {
-        snprintf(line1, sizeof(line1), " Ch%d  Ready", midiCh + 1);
-        snprintf(line2, sizeof(line2), "");
-        snprintf(setLine, sizeof(setLine), "  %s", setNames[activeSet]);
-    }
-
-    void buildActiveDisplay(uint8_t ccNum, uint8_t midiVal) {
-        int filled = (midiVal * 10) / 127;
-        char bar[11];
-        for (int i = 0; i < 10; i++)
-            bar[i] = (i < filled) ? '|' : '.';
-        bar[10] = 0;
-        snprintf(line1, sizeof(line1), " Ch%d CC%03d", midiCh + 1, ccNum);
-        snprintf(line2, sizeof(line2), " %s", bar);
-        snprintf(setLine, sizeof(setLine), "  %s", setNames[activeSet]);
+    void refreshDisplay(uint8_t ccNum, uint8_t midiVal) {
+        // Top display: Ch + CC + value bar on one line
+        // Pad to ~20 chars to fill the box
+        if (ccNum == 255) {
+            snprintf(ccBuf, sizeof(ccBuf),
+                "Ch%-2d  Ready        ",
+                midiCh + 1);
+        } else {
+            int filled = (midiVal * 8) / 127;
+            char bar[9];
+            for (int i = 0; i < 8; i++)
+                bar[i] = (i < filled) ? '|' : '.';
+            bar[8] = 0;
+            snprintf(ccBuf, sizeof(ccBuf),
+                "Ch%-2d CC%03d %s",
+                midiCh + 1, ccNum, bar);
+        }
+        // Bottom display: set name centred
+        snprintf(setNameBuf, sizeof(setNameBuf),
+            "  %s", setNames[activeSet]);
     }
 
     void update() override {
         if (displayTimer > 0) {
             displayTimer--;
-        } else {
-            buildIdleDisplay();
+            if (displayTimer == 0)
+                refreshDisplay(255, 0);
         }
-
-        // Next Set button
-        float btnVal = params[Info::NextSetBtn];
-        if (btnVal > 0.5f && lastBtn <= 0.5f) {
-            activeSet = (activeSet + 1) % NumSets;
-            for (int k = 0; k < NumKnobs; k++) lastVal[k] = -1.f;
-            buildIdleDisplay();
-            displayTimer = 48000 * 2;
-        }
-        lastBtn = btnVal;
 
         for (int k = 0; k < NumKnobs; k++) {
             float v = params[k];
@@ -175,15 +155,23 @@ public:
                 msg.bytes[2] = midiVal;
                 midiOut.sendMessage(msg);
 
-                buildActiveDisplay(ccNum, midiVal);
+                refreshDisplay(ccNum, midiVal);
                 displayTimer = 48000 * 2;
             }
         }
     }
 
     void set_param(int id, float val) override {
-        if (id >= 0 && id < Info::NumParams)
+        if (id >= 0 && id < Info::NumParams) {
             params[id] = val;
+        } else if (id == Info::NumParams) {
+            if (val > 0.5f) {
+                activeSet = (activeSet + 1) % NumSets;
+                for (int k = 0; k < NumKnobs; k++) lastVal[k] = -1.f;
+                refreshDisplay(255, 0);
+                displayTimer = 48000 * 2;
+            }
+        }
     }
 
     float get_param(int id) const override {
@@ -191,17 +179,14 @@ public:
         return 0.f;
     }
 
-    size_t get_display_text(int display_id, std::span<char> buf) override {
-        if (display_id == Info::MainDisplay) {
-            int len = snprintf(buf.data(), buf.size(),
-                "%s\n%s", line1, line2);
-            return len > 0 ? static_cast<size_t>(len) : 0;
-        }
-        if (display_id == Info::SetNameDisplay) {
-            int len = snprintf(buf.data(), buf.size(), "%s", setLine);
-            return len > 0 ? static_cast<size_t>(len) : 0;
-        }
-        return 0;
+    size_t get_display_text(int display_id,
+                             std::span<char> buf) override {
+        int len = 0;
+        if (display_id == Info::CCDisplay)
+            len = snprintf(buf.data(), buf.size(), "%s", ccBuf);
+        else if (display_id == Info::SetDisplay)
+            len = snprintf(buf.data(), buf.size(), "%s", setNameBuf);
+        return len > 0 ? static_cast<size_t>(len) : 0;
     }
 
     void set_input(int, float) override {}
@@ -252,22 +237,20 @@ public:
         }
 
         for (int k = 0; k < NumKnobs; k++) lastVal[k] = -1.f;
-        buildIdleDisplay();
+        refreshDisplay(255, 0);
         displayTimer = 48000 * 2;
     }
 
 private:
     float   params[Info::NumParams]    = {};
     float   lastVal[NumKnobs]          = {};
-    float   lastBtn                    = 0.f;
     int     activeSet                  = 0;
     int     displayTimer               = 0;
     uint8_t midiCh                     = 0;
     uint8_t savedCC[NumSets][NumKnobs] = {};
     char    setNames[NumSets][16]      = {};
-    char    line1[32]                  = {};
-    char    line2[32]                  = {};
-    char    setLine[32]                = {};
+    char    ccBuf[32]                  = {};
+    char    setNameBuf[32]             = {};
     rack::midi::Output midiOut;
 };
 
