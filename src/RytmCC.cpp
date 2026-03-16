@@ -112,7 +112,7 @@ public:
     void refreshDisplay(uint8_t ccNum, uint8_t midiVal) {
         if (ccNum == 255) {
             snprintf(ccBuf, sizeof(ccBuf),
-                "Ch%-2d  Ready", midiCh + 1);
+                " Ch%-2d  Ready", midiCh + 1);
         } else {
             int filled = (midiVal * 8) / 127;
             char bar[9];
@@ -120,11 +120,11 @@ public:
                 bar[i] = (i < filled) ? '|' : '.';
             bar[8] = 0;
             snprintf(ccBuf, sizeof(ccBuf),
-                "Ch%-2d CC%03d %s",
+                " Ch%-2d CC%03d %s",
                 midiCh + 1, ccNum, bar);
         }
         snprintf(setNameBuf, sizeof(setNameBuf),
-            "%s", setNames[activeSet]);
+            " %s", setNames[activeSet]);
     }
 
     void update() override {
