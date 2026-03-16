@@ -1,0 +1,2143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MetaModule MIDI CC Patch Builder</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f8f8f8;--surface:#ffffff;--surface2:#f2f2f2;--surface3:#eaeaea;
+  --border:#e2e2e2;--border2:#c8c8c8;
+  --text:#111111;--text2:#555555;--text3:#999999;
+  --s0:#2563eb;--s0-bg:#eff6ff;--s0-border:#bfdbfe;--s0-light:#dbeafe;
+  --s1:#16a34a;--s1-bg:#f0fdf4;--s1-border:#bbf7d0;
+  --s2:#ea580c;--s2-bg:#fff7ed;--s2-border:#fed7aa;
+  --s3:#7c3aed;--s3-bg:#f5f3ff;--s3-border:#ddd6fe;
+  --r:4px;--r2:6px;--font:'Inter',system-ui,sans-serif
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:13px;line-height:1.4;min-height:100vh}
+
+/* Header */
+header{border-bottom:1px solid var(--border);padding:10px 20px;display:flex;align-items:center;justify-content:space-between;background:#fff;position:sticky;top:0;z-index:100;gap:8px;flex-wrap:wrap}
+.logo{font-size:14px;font-weight:700;color:var(--text);letter-spacing:-.01em}
+.logo span{font-weight:400;color:var(--text3)}
+.hdr-right{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+input.patch-name{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-family:var(--font);font-size:13px;font-weight:600;padding:5px 10px;width:200px;outline:none}
+input.patch-name:focus{border-color:var(--s0);box-shadow:0 0 0 2px var(--s0-light)}
+
+/* Buttons */
+.btn{background:#fff;border:1px solid var(--border2);border-radius:var(--r);color:var(--text2);font-family:var(--font);font-size:12px;padding:5px 12px;cursor:pointer;transition:all .1s;white-space:nowrap}
+.btn:hover{background:var(--surface2);color:var(--text);border-color:#aaa}
+.btn-primary{background:#2563eb;border-color:#2563eb;color:#fff;font-weight:500}
+.btn-primary:hover{background:#1d4ed8;border-color:#1d4ed8;color:#fff}
+.btn-danger{color:#dc2626;border-color:#fecaca}
+.btn-danger:hover{background:#fef2f2;border-color:#fca5a5}
+
+/* Device bar */
+.device-bar{background:#fff;border-bottom:1px solid var(--border);padding:8px 20px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.device-bar label{font-size:12px;font-weight:500;color:var(--text2);white-space:nowrap}
+.device-bar select{background:#fff;border:1px solid var(--border2);border-radius:var(--r);color:var(--text);font-family:var(--font);font-size:13px;padding:5px 8px;outline:none;cursor:pointer;min-width:150px}
+.device-bar select:focus{border-color:var(--s0)}
+.device-info{font-size:11px;color:var(--s0);font-weight:500;background:var(--s0-bg);padding:2px 8px;border-radius:10px;border:1px solid var(--s0-border)}
+
+/* Layout */
+.layout{display:grid;grid-template-columns:240px 1fr;min-height:calc(100vh - 82px)}
+.sidebar{border-right:1px solid var(--border);background:#fff;overflow-y:auto;position:sticky;top:82px;height:calc(100vh - 82px)}
+
+/* Sidebar sections */
+.sb-sect{padding:12px 0 4px}
+.sb-label{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);padding:0 14px 7px}
+.divider{height:1px;background:var(--border);margin:4px 0}
+
+/* Set tabs */
+.set-tabs{display:grid;grid-template-columns:1fr 1fr;gap:5px;padding:6px 10px}
+.set-tab{border:1.5px solid transparent;border-radius:var(--r);padding:9px 8px;cursor:pointer;text-align:center;transition:all .12s;background:#fff}
+.set-tab:hover{filter:brightness(.95)}
+.set-tab-name{font-size:12px;font-weight:700;color:inherit;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.set-tab-count{font-size:10px;color:inherit;opacity:.7;margin-top:1px}
+.set-name-row{padding:5px 10px 8px}
+.set-name-inp{width:100%;background:#fff;border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-family:var(--font);font-size:13px;padding:5px 9px;outline:none}
+.set-name-inp:focus{border-color:var(--s0)}
+
+/* Knob list */
+.knob-list{padding:2px 8px 12px}
+.knob-item{border:1.5px solid var(--border);border-radius:var(--r2);padding:7px 9px;margin-bottom:3px;cursor:pointer;transition:all .1s;background:#fff}
+.knob-item:hover{border-color:var(--border2);background:var(--surface2)}
+.ki-row{display:flex;align-items:center;gap:6px;margin-bottom:2px}
+.ki-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.ki-num{font-size:11px;font-weight:700;color:var(--text2)}
+.ki-cc{font-size:10px;color:var(--text3);margin-left:auto;font-variant-numeric:tabular-nums}
+.ki-ch{font-size:10px;color:var(--text3)}
+.ki-name{font-size:11px;color:var(--text);font-weight:500;padding-left:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ki-unset{font-size:11px;color:var(--text3);font-style:italic;padding-left:15px}
+
+/* Main area */
+.main{padding:18px 22px;overflow-y:auto;background:var(--bg)}
+.main-hdr{margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.main-hdr-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
+.main-hdr h2{font-size:15px;font-weight:700}
+.main-hdr p{font-size:12px;color:var(--text2);margin-top:1px}
+
+/* Cards */
+.card{background:#fff;border:1px solid var(--border);border-radius:var(--r2);padding:14px 16px;margin-bottom:8px}
+.card h3{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:12px}
+.form-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.form-row:last-child{margin-bottom:0}
+.form-row label{font-size:12px;font-weight:500;color:var(--text2);min-width:80px}
+.form-row input[type=text]{background:#fff;border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-family:var(--font);font-size:13px;padding:5px 9px;flex:1;outline:none}
+.form-row input[type=text]:focus{border-color:var(--s0);box-shadow:0 0 0 2px var(--s0-light)}
+.form-row select{background:#fff;border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-family:var(--font);font-size:12px;padding:5px 8px;outline:none;cursor:pointer;flex:1}
+.form-row select:focus{border-color:var(--s0)}
+.info-row{display:flex;align-items:center;justify-content:space-between;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
+.info-pill{font-size:12px;color:var(--text2)}
+.info-pill strong{color:var(--text)}
+.clear-btn{background:none;border:none;font-size:11px;color:var(--text3);cursor:pointer;padding:2px 6px;border-radius:3px}
+.clear-btn:hover{color:#dc2626;background:#fef2f2}
+
+/* Category buttons */
+.cat-grid{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:12px}
+.cat-btn{background:var(--surface2);border:1.5px solid transparent;border-radius:20px;color:var(--text2);font-size:11px;font-weight:500;padding:4px 12px;cursor:pointer;transition:all .1s}
+.cat-btn:hover{background:var(--surface3);color:var(--text)}
+.cat-btn.active{background:#fff;border-color:var(--s0);color:var(--s0);font-weight:600}
+
+/* Param grid */
+.param-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:3px}
+.param-btn{background:#fff;border:1.5px solid var(--border);border-radius:var(--r);color:var(--text2);font-size:12px;padding:7px 10px;cursor:pointer;text-align:left;transition:all .1s;display:flex;align-items:center;justify-content:space-between;gap:6px}
+.param-btn:hover{border-color:var(--s0);color:var(--text);background:var(--s0-bg)}
+.param-btn.selected{border-color:var(--s0);color:var(--s0);background:var(--s0-bg);font-weight:600}
+.param-btn.selected .param-cc{color:var(--s0);opacity:.7}
+.param-cc{font-size:10px;color:var(--text3);white-space:nowrap;font-variant-numeric:tabular-nums}
+
+/* Empty state */
+.no-device{text-align:center;padding:80px 20px;color:var(--text3)}
+.no-device p{font-size:14px;margin-top:6px}
+
+/* Toast */
+.status{position:fixed;bottom:16px;right:18px;background:#111;border-radius:var(--r2);padding:8px 14px;font-size:12px;color:#fff;opacity:0;transition:opacity .2s;pointer-events:none;z-index:300}
+.status.show{opacity:1}
+
+/* Overview table */
+.ov-table{width:100%;border-collapse:collapse;font-size:12px}
+.ov-table th{text-align:left;padding:7px 10px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);border-bottom:2px solid var(--border)}
+.ov-table td{padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:middle}
+.ov-table tr:last-child td{border-bottom:none}
+.ov-table tr:hover td{background:var(--s0-bg)}
+.ov-set{font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px}
+.ov-set-0{color:#2563eb;background:#dbeafe}
+.ov-set-1{color:#16a34a;background:#dcfce7}
+.ov-set-2{color:#ea580c;background:#ffedd5}
+.ov-set-3{color:#7c3aed;background:#ede9fe}
+.ov-mono{font-size:11px;font-variant-numeric:tabular-nums;font-weight:500}
+
+/* Ref card */
+#refCard{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:#fff;z-index:500;overflow-y:auto;padding:24px 32px;color:#111}
+#refCard.show{display:block}
+.ref-hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px;border-bottom:2px solid #111;padding-bottom:12px}
+.ref-title{font-size:16px;font-weight:700}
+.ref-meta{font-size:11px;color:#888;margin-top:2px}
+.ref-set-block{margin-bottom:18px;page-break-inside:avoid}
+.ref-set-hdr{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px;padding:3px 9px;border-radius:10px;display:inline-block}
+.ref-set-hdr-0{color:#2563eb;background:#dbeafe}
+.ref-set-hdr-1{color:#16a34a;background:#dcfce7}
+.ref-set-hdr-2{color:#ea580c;background:#ffedd5}
+.ref-set-hdr-3{color:#7c3aed;background:#ede9fe}
+.ref-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;margin-top:6px}
+.ref-knob{border:1px solid #e5e5e5;border-radius:5px;padding:7px 9px;page-break-inside:avoid}
+.ref-kh{display:flex;align-items:center;justify-content:space-between;margin-bottom:3px}
+.ref-knum{font-size:9px;font-weight:700;padding:1px 5px;border-radius:8px}
+.ref-knum-0{color:#dc2626;background:#fee2e2}
+.ref-knum-1{color:#ea580c;background:#ffedd5}
+.ref-knum-2{color:#ca8a04;background:#fef9c3}
+.ref-knum-3{color:#16a34a;background:#dcfce7}
+.ref-knum-4{color:#0891b2;background:#cffafe}
+.ref-knum-5{color:#7c3aed;background:#ede9fe}
+.ref-kcc{font-size:9px;color:#aaa;font-variant-numeric:tabular-nums}
+.ref-kname{font-size:11px;font-weight:600;margin-bottom:1px;color:#111}
+.ref-kcat{font-size:9px;color:#aaa;margin-bottom:1px}
+.ref-kch{font-size:9px;color:#bbb;font-variant-numeric:tabular-nums}
+.ref-empty{color:#ccc;font-style:italic;font-size:10px}
+@media print{.ref-actions{display:none!important}}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">CtrlCC <span>Patch Builder</span></div>
+  <div class="hdr-right">
+    <label style="font-size:11px;font-weight:600;color:var(--text3);letter-spacing:.06em;text-transform:uppercase;">Patch</label><input type="text" class="patch-name" id="patchName" value="MIDI Controller" placeholder="Patch name"/>
+    <button class="btn btn-danger" onclick="clearAll()">Clear all</button>
+    <button class="btn" onclick="showOverview()">Overview</button>
+    <button class="btn" onclick="showRef()">Ref card</button>
+    <button class="btn" onclick="triggerLoad()">Load .yml</button>
+    <input type="file" id="ymlFileIn" accept=".yml,.yaml" style="display:none" onchange="loadYML(this)"/>
+    <button class="btn btn-primary" onclick="exportYML()">Export .yml</button>
+  </div>
+</header>
+<div class="device-bar">
+  <label>Device:</label>
+  <select id="brandSel" onchange="onBrandChange()">
+    <option value="">— Select brand —</option>
+  </select>
+  <select id="modelSel" onchange="onModelChange()" disabled>
+    <option value="">— Select model —</option>
+  </select>
+  <span class="device-info" id="deviceInfo"></span>
+</div>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sb-sect">
+      <div class="sb-label">Knob sets</div>
+      <div class="set-tabs" id="setTabs"></div>
+      <div class="set-name-row">
+        <input type="text" class="set-name-inp" id="setNameInp" placeholder="Set name" oninput="renameSet(this.value)"/>
+      </div>
+    </div>
+    <div class="divider"></div>
+    <div class="sb-sect">
+      <div class="sb-label" id="knobLabel">Knobs</div>
+      <div class="knob-list" id="knobList"></div>
+    </div>
+  </aside>
+  <main class="main" id="mainArea">
+    <div class="no-device">
+      <p>Select a device above to assign MIDI CCs to knobs.</p>
+    </div>
+  </main>
+</div>
+<div class="status" id="status"></div>
+<div id="refCard">
+  <div class="ref-hdr">
+    <div>
+      <div class="ref-title" id="refTitle"></div>
+      <div class="ref-meta" id="refMeta"></div>
+    </div>
+    <div class="ref-actions" style="display:flex;gap:6px;">
+      <button onclick="window.print()" style="background:#1a1a1a;border:none;color:#fff;font-family:'Inconsolata',monospace;font-size:11px;padding:6px 14px;border-radius:4px;cursor:pointer;">Print</button>
+      <button onclick="hideRef()" style="background:none;border:1px solid #ccc;font-family:'Inconsolata',monospace;font-size:11px;padding:6px 14px;border-radius:4px;cursor:pointer;">Close</button>
+    </div>
+  </div>
+  <div id="refBody"></div>
+</div>
+<script>
+const DB = {
+  "Audiothingies": {
+    "Micromonsta 2": {
+      "Oscillators": [
+        {name:"Osc 1 shape",cc:39,min:0,max:127,def:0,note:""},
+        {name:"Osc 1 tune",cc:40,min:0,max:127,def:64,note:"centered"},
+        {name:"Osc 1 fine tune",cc:41,min:0,max:127,def:64,note:""},
+        {name:"Osc 2 shape",cc:42,min:0,max:127,def:0,note:""},
+        {name:"Osc 2 tune",cc:43,min:0,max:127,def:64,note:"centered"},
+        {name:"Osc 2 fine tune",cc:44,min:0,max:127,def:64,note:""},
+        {name:"Osc 3 shape",cc:45,min:0,max:127,def:0,note:""},
+        {name:"Osc 3 tune",cc:46,min:0,max:127,def:64,note:"centered"},
+        {name:"Osc 3 fine tune",cc:47,min:0,max:127,def:64,note:""},
+      ],
+      "Mix": [
+        {name:"Osc 1 level",cc:48,min:0,max:127,def:100,note:""},
+        {name:"Osc 2 level",cc:49,min:0,max:127,def:100,note:""},
+        {name:"Osc 3 level",cc:50,min:0,max:127,def:100,note:""},
+        {name:"Noise level",cc:51,min:0,max:127,def:0,note:""},
+      ],
+      "Filter": [
+        {name:"Cutoff",cc:74,min:0,max:127,def:127,note:""},
+        {name:"Resonance",cc:71,min:0,max:127,def:0,note:""},
+        {name:"Envelope",cc:88,min:0,max:127,def:0,note:""},
+        {name:"Tracking",cc:89,min:0,max:127,def:0,note:""},
+        {name:"FM",cc:90,min:0,max:127,def:0,note:""},
+      ],
+      "Envelopes": [
+        {name:"Env 1 attack",cc:73,min:0,max:127,def:0,note:""},
+        {name:"Env 1 decay",cc:75,min:0,max:127,def:64,note:""},
+        {name:"Env 1 sustain",cc:79,min:0,max:127,def:64,note:""},
+        {name:"Env 1 release",cc:72,min:0,max:127,def:0,note:""},
+        {name:"Env 2 attack",cc:80,min:0,max:127,def:0,note:""},
+        {name:"Env 2 decay",cc:81,min:0,max:127,def:64,note:""},
+        {name:"Env 2 sustain",cc:82,min:0,max:127,def:64,note:""},
+        {name:"Env 2 release",cc:83,min:0,max:127,def:0,note:""},
+        {name:"Env 3 attack",cc:84,min:0,max:127,def:0,note:""},
+        {name:"Env 3 decay",cc:85,min:0,max:127,def:64,note:""},
+        {name:"Env 3 sustain",cc:86,min:0,max:127,def:64,note:""},
+        {name:"Env 3 release",cc:87,min:0,max:127,def:0,note:""},
+      ],
+      "LFOs": [
+        {name:"LFO 1 speed",cc:76,min:0,max:127,def:64,note:""},
+        {name:"LFO 2 speed",cc:77,min:0,max:127,def:64,note:""},
+        {name:"LFO 3 speed",cc:78,min:0,max:127,def:64,note:""},
+      ],
+      "Mod matrix": [
+        {name:"Mod matrix level 1",cc:52,min:0,max:127,def:64,note:""},
+        {name:"Mod matrix level 2",cc:53,min:0,max:127,def:64,note:""},
+        {name:"Mod matrix level 3",cc:54,min:0,max:127,def:64,note:""},
+        {name:"Mod matrix level 4",cc:55,min:0,max:127,def:64,note:""},
+        {name:"Mod matrix level 5",cc:56,min:0,max:127,def:64,note:""},
+        {name:"Mod matrix level 6",cc:57,min:0,max:127,def:64,note:""},
+        {name:"Mod matrix level 7",cc:58,min:0,max:127,def:64,note:""},
+        {name:"Mod matrix level 8",cc:59,min:0,max:127,def:64,note:""},
+        {name:"Mod matrix level 9",cc:60,min:0,max:127,def:64,note:""},
+        {name:"Mod matrix level 10",cc:61,min:0,max:127,def:64,note:""},
+      ],
+      "Effects": [
+        {name:"Delay time",cc:26,min:0,max:127,def:64,note:""},
+        {name:"Delay feedback",cc:27,min:0,max:127,def:0,note:""},
+        {name:"Delay level",cc:28,min:0,max:127,def:0,note:""},
+        {name:"Reverb decay",cc:29,min:0,max:127,def:64,note:""},
+        {name:"Reverb mod",cc:30,min:0,max:127,def:0,note:""},
+        {name:"Reverb level",cc:31,min:0,max:127,def:0,note:""},
+      ],
+      "Voice": [
+        {name:"Voice detune",cc:33,min:0,max:127,def:0,note:""},
+        {name:"Voice drive",cc:91,min:0,max:127,def:0,note:""},
+        {name:"Voice glide",cc:5,min:0,max:127,def:0,note:""},
+      ],
+      "General": [
+        {name:"Volume",cc:7,min:0,max:127,def:100,note:""},
+        {name:"Mod wheel",cc:1,min:0,max:127,def:0,note:""},
+        {name:"EQ",cc:25,min:0,max:127,def:64,note:""},
+        {name:"Osc detune",cc:34,min:0,max:127,def:0,note:""},
+        {name:"Pan spread",cc:35,min:0,max:127,def:64,note:""},
+      {name:"Bank select LSB",cc:32,min:0,max:127,def:0,note:""},
+        {name:"VCA env vel sensitivity",cc:36,min:0,max:127,def:64,note:""},
+        {name:"Filter env vel sensitivity",cc:37,min:0,max:127,def:64,note:""},
+        {name:"Sustain pedal",cc:64,min:0,max:127,def:0,note:""},
+        {name:"Mod knob",cc:70,min:0,max:127,def:0,note:""},
+        {name:"Lag level 1",cc:62,min:0,max:127,def:0,note:""},
+        {name:"All sound off",cc:120,min:0,max:127,def:0,note:""},
+        {name:"All notes off",cc:123,min:0,max:127,def:0,note:""},
+        ],
+    },
+  },
+  "Dirtywave": {
+    "M8": {
+      "MIDI mappings": [
+        {name:"Mapped parameter 0",cc:0,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 1",cc:1,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 2",cc:2,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 3",cc:3,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 4",cc:4,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 5",cc:5,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 6",cc:6,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 7",cc:7,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 8",cc:8,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 9",cc:9,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 10",cc:10,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 11",cc:11,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 12",cc:12,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 13",cc:13,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 14",cc:14,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 15",cc:15,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 16",cc:16,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 17",cc:17,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 18",cc:18,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 19",cc:19,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 20",cc:20,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 21",cc:21,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 22",cc:22,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 23",cc:23,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 24",cc:24,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 25",cc:25,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 26",cc:26,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 27",cc:27,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 28",cc:28,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 29",cc:29,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 30",cc:30,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 31",cc:31,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 32",cc:32,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 33",cc:33,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 34",cc:34,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 35",cc:35,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 36",cc:36,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 37",cc:37,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 38",cc:38,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 39",cc:39,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 40",cc:40,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 41",cc:41,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 42",cc:42,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 43",cc:43,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 44",cc:44,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 45",cc:45,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 46",cc:46,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 47",cc:47,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 48",cc:48,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 49",cc:49,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 50",cc:50,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 51",cc:51,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 52",cc:52,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 53",cc:53,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 54",cc:54,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 55",cc:55,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 56",cc:56,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 57",cc:57,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 58",cc:58,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 59",cc:59,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 60",cc:60,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 61",cc:61,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 62",cc:62,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 63",cc:63,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 64",cc:64,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 65",cc:65,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 66",cc:66,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 67",cc:67,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 68",cc:68,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 69",cc:69,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 70",cc:70,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 71",cc:71,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 72",cc:72,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 73",cc:73,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 74",cc:74,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 75",cc:75,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 76",cc:76,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 77",cc:77,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 78",cc:78,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 79",cc:79,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 80",cc:80,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 81",cc:81,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 82",cc:82,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 83",cc:83,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 84",cc:84,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 85",cc:85,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 86",cc:86,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 87",cc:87,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 88",cc:88,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 89",cc:89,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 90",cc:90,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 91",cc:91,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 92",cc:92,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 93",cc:93,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 94",cc:94,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 95",cc:95,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 96",cc:96,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 97",cc:97,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 98",cc:98,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 99",cc:99,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 100",cc:100,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 101",cc:101,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 102",cc:102,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 103",cc:103,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 104",cc:104,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 105",cc:105,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 106",cc:106,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 107",cc:107,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 108",cc:108,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 109",cc:109,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 110",cc:110,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 111",cc:111,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 112",cc:112,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 113",cc:113,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 114",cc:114,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 115",cc:115,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 116",cc:116,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 117",cc:117,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 118",cc:118,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 119",cc:119,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 120",cc:120,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 121",cc:121,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 122",cc:122,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 123",cc:123,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 124",cc:124,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 125",cc:125,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 126",cc:126,min:0,max:127,def:0,note:""},
+        {name:"Mapped parameter 127",cc:127,min:0,max:127,def:0,note:""},
+      ],
+    },
+  },
+  "Elektron": {
+    "Analog Four MKII": {
+      "Performance": [
+        {name:"Parameter A",cc:3,min:0,max:127,def:0,note:""},
+        {name:"Parameter B",cc:4,min:0,max:127,def:0,note:""},
+        {name:"Parameter C",cc:8,min:0,max:127,def:0,note:""},
+        {name:"Parameter D",cc:9,min:0,max:127,def:0,note:""},
+        {name:"Parameter E",cc:11,min:0,max:127,def:0,note:""},
+        {name:"Parameter F",cc:64,min:0,max:127,def:0,note:""},
+        {name:"Parameter G",cc:65,min:0,max:127,def:0,note:""},
+        {name:"Parameter H",cc:66,min:0,max:127,def:0,note:""},
+        {name:"Parameter I",cc:67,min:0,max:127,def:0,note:""},
+        {name:"Parameter J",cc:68,min:0,max:127,def:0,note:""},
+      ],
+      "Track": [
+        {name:"Mute",cc:94,min:0,max:1,def:0,note:"0:Off,1:Mute"},
+        {name:"Level",cc:95,min:0,max:127,def:100,note:""},
+      ],
+      "Synth OSC1": [
+        {name:"Pitch",cc:16,min:0,max:127,def:64,note:"centered"},
+        {name:"Level",cc:69,min:0,max:127,def:100,note:""},
+        {name:"Waveform",cc:70,min:0,max:7,def:0,note:"0:Saw,1:T.Pulse,2:Pulse,3:Tri"},
+        {name:"Sub Oscillator",cc:71,min:0,max:4,def:0,note:""},
+        {name:"Pulsewidth",cc:72,min:0,max:127,def:64,note:"centered"},
+        {name:"PWM Speed",cc:73,min:0,max:127,def:0,note:""},
+        {name:"PWM Depth",cc:74,min:0,max:127,def:0,note:""},
+      ],
+      "Synth OSC2": [
+        {name:"Pitch",cc:17,min:0,max:127,def:64,note:"centered"},
+        {name:"Level",cc:78,min:0,max:127,def:100,note:""},
+        {name:"Waveform",cc:79,min:0,max:7,def:0,note:""},
+        {name:"Sub Oscillator",cc:80,min:0,max:4,def:0,note:""},
+        {name:"Pulsewidth",cc:81,min:0,max:127,def:64,note:"centered"},
+      ],
+      "Synth Noise": [
+        {name:"S&H",cc:75,min:0,max:127,def:0,note:""},
+        {name:"Fade",cc:76,min:0,max:127,def:0,note:""},
+        {name:"Level",cc:77,min:0,max:127,def:0,note:""},
+      ],
+      "Filters": [
+        {name:"Filter 1 Frequency",cc:18,min:0,max:127,def:127,note:""},
+        {name:"Filter 1 Resonance",cc:89,min:0,max:127,def:0,note:""},
+        {name:"Filter 1 Env Depth",cc:102,min:0,max:127,def:64,note:"centered"},
+        {name:"Filter 2 Frequency",cc:19,min:0,max:127,def:127,note:""},
+        {name:"Filter 2 Resonance",cc:90,min:0,max:127,def:0,note:""},
+        {name:"Filter 2 Env Depth",cc:103,min:0,max:127,def:64,note:"centered"},
+      ],
+      "Amp": [
+        {name:"Attack",cc:104,min:0,max:127,def:0,note:""},
+        {name:"Decay",cc:105,min:0,max:127,def:64,note:""},
+        {name:"Sustain",cc:106,min:0,max:127,def:64,note:""},
+        {name:"Release",cc:107,min:0,max:127,def:0,note:""},
+        {name:"Chorus Send",cc:91,min:0,max:127,def:0,note:""},
+        {name:"Delay Send",cc:92,min:0,max:127,def:0,note:""},
+        {name:"Reverb Send",cc:93,min:0,max:127,def:0,note:""},
+        {name:"Pan",cc:10,min:0,max:127,def:64,note:"centered"},
+        {name:"Volume",cc:7,min:0,max:127,def:100,note:""},
+      ],
+      "Filter Env": [
+        {name:"Attack",cc:108,min:0,max:127,def:0,note:""},
+        {name:"Decay",cc:109,min:0,max:127,def:64,note:""},
+        {name:"Sustain",cc:110,min:0,max:127,def:64,note:""},
+        {name:"Release",cc:111,min:0,max:127,def:0,note:""},
+        {name:"Depth A",cc:20,min:0,max:127,def:64,note:"centered"},
+        {name:"Depth B",cc:21,min:0,max:127,def:64,note:"centered"},
+      ],
+      "AUX Env": [
+        {name:"Attack",cc:112,min:0,max:127,def:0,note:""},
+        {name:"Decay",cc:113,min:0,max:127,def:64,note:""},
+        {name:"Sustain",cc:114,min:0,max:127,def:64,note:""},
+        {name:"Release",cc:115,min:0,max:127,def:0,note:""},
+        {name:"Depth A",cc:22,min:0,max:127,def:64,note:"centered"},
+        {name:"Depth B",cc:2,min:0,max:127,def:64,note:"centered"},
+      ],
+      "LFO 1": [
+        {name:"Speed",cc:116,min:0,max:127,def:64,note:""},
+        {name:"Multiplier",cc:117,min:0,max:35,def:0,note:"0:x1"},
+        {name:"Depth A",cc:24,min:0,max:127,def:64,note:"centered"},
+        {name:"Depth B",cc:25,min:0,max:127,def:64,note:"centered"},
+      ],
+      "LFO 2": [
+        {name:"Speed",cc:118,min:0,max:127,def:64,note:""},
+        {name:"Multiplier",cc:119,min:0,max:35,def:0,note:""},
+        {name:"Depth A",cc:26,min:0,max:127,def:64,note:"centered"},
+        {name:"Depth B",cc:27,min:0,max:127,def:64,note:"centered"},
+      ],
+    },
+    "Analog Rytm MKII": {
+      "Trig": [
+        {name:"Note",cc:3,min:36,max:84,def:60,note:""},
+        {name:"Velocity",cc:4,min:1,max:127,def:100,note:""},
+        {name:"Length",cc:5,min:0,max:127,def:0,note:""},
+        {name:"Synth trig",cc:11,min:0,max:1,def:1,note:"0:Off,1:On"},
+        {name:"Sample trig",cc:12,min:0,max:1,def:1,note:""},
+        {name:"Filter trig",cc:13,min:0,max:1,def:1,note:""},
+        {name:"LFO trig",cc:14,min:0,max:1,def:1,note:""},
+      ],
+      "Kit": [
+        {name:"Track Level",cc:95,min:0,max:127,def:100,note:""},
+        {name:"Track Mute",cc:94,min:0,max:1,def:0,note:"0:Unmute,1:Mute"},
+        {name:"Active Scene",cc:92,min:0,max:127,def:0,note:""},
+        {name:"Track Machine Type",cc:15,min:1,max:33,def:1,note:"1:BD Classic"},
+      ],
+      "Sample": [
+        {name:"Tune",cc:24,min:40,max:88,def:64,note:"centered"},
+        {name:"Fine Tune",cc:25,min:0,max:127,def:64,note:""},
+        {name:"Bit Reduction",cc:26,min:0,max:127,def:0,note:""},
+        {name:"Slot",cc:27,min:0,max:127,def:0,note:"0:Off,1-127:Sample"},
+        {name:"Start",cc:28,min:0,max:120,def:0,note:""},
+        {name:"End",cc:29,min:0,max:120,def:120,note:""},
+        {name:"Loop",cc:30,min:0,max:1,def:0,note:"0:Off,1:On"},
+        {name:"Level",cc:31,min:0,max:127,def:100,note:""},
+      ],
+      "Filter": [
+        {name:"Attack Time",cc:70,min:0,max:127,def:0,note:""},
+        {name:"Decay Time",cc:71,min:0,max:127,def:64,note:""},
+        {name:"Sustain Level",cc:72,min:0,max:127,def:64,note:""},
+        {name:"Release Time",cc:73,min:0,max:127,def:0,note:""},
+        {name:"Frequency",cc:74,min:0,max:127,def:127,note:""},
+        {name:"Resonance",cc:75,min:0,max:127,def:0,note:""},
+        {name:"Type",cc:76,min:0,max:6,def:0,note:"0:LP2,1:LP1,2:BP,3:HP1,4:HP2,5:BS,6:Peak"},
+        {name:"Env Depth",cc:77,min:0,max:127,def:64,note:"centered"},
+      ],
+      "Amp": [
+        {name:"Attack Time",cc:78,min:0,max:127,def:0,note:""},
+        {name:"Hold Time",cc:79,min:0,max:127,def:0,note:""},
+        {name:"Decay Time",cc:80,min:0,max:127,def:64,note:""},
+        {name:"Overdrive",cc:81,min:0,max:127,def:0,note:""},
+        {name:"Delay Send",cc:82,min:0,max:127,def:0,note:""},
+        {name:"Reverb Send",cc:83,min:0,max:127,def:0,note:""},
+        {name:"Pan",cc:10,min:0,max:127,def:64,note:"centered"},
+        {name:"Volume",cc:7,min:0,max:127,def:100,note:""},
+      ],
+      "LFO": [
+        {name:"Speed",cc:102,min:0,max:127,def:64,note:""},
+        {name:"Multiplier",cc:103,min:0,max:23,def:0,note:""},
+        {name:"Fade In/Out",cc:104,min:0,max:127,def:64,note:"centered"},
+        {name:"Destination",cc:105,min:0,max:41,def:0,note:""},
+        {name:"Waveform",cc:106,min:0,max:6,def:0,note:"0:Tri,1:Sin,2:Sq,3:Saw,4:Exp,5:Ramp,6:Rnd"},
+        {name:"Start Phase",cc:107,min:0,max:127,def:0,note:""},
+        {name:"Trig Mode",cc:108,min:0,max:4,def:0,note:"0:Free,1:Trig,2:Hold,3:One,4:Half"},
+        {name:"Depth",cc:109,min:0,max:127,def:64,note:"centered"},
+      ],
+      "Performance": [
+        {name:"Parameter 1",cc:35,min:0,max:127,def:0,note:""},
+        {name:"Parameter 2",cc:36,min:0,max:127,def:0,note:""},
+        {name:"Parameter 3",cc:37,min:0,max:127,def:0,note:""},
+        {name:"Parameter 4",cc:39,min:0,max:127,def:0,note:""},
+        {name:"Parameter 5",cc:40,min:0,max:127,def:0,note:""},
+        {name:"Parameter 6",cc:41,min:0,max:127,def:0,note:""},
+        {name:"Parameter 7",cc:42,min:0,max:127,def:0,note:""},
+        {name:"Parameter 8",cc:43,min:0,max:127,def:0,note:""},
+        {name:"Parameter 9",cc:44,min:0,max:127,def:0,note:""},
+        {name:"Parameter 10",cc:45,min:0,max:127,def:0,note:""},
+        {name:"Parameter 11",cc:46,min:0,max:127,def:0,note:""},
+        {name:"Parameter 12",cc:47,min:0,max:127,def:0,note:""},
+      ],
+      "FX Delay": [
+        {name:"Time",cc:16,min:0,max:127,def:64,note:""},
+        {name:"Pingpong",cc:17,min:0,max:1,def:0,note:"0:Off,1:On"},
+        {name:"Stereo Width",cc:18,min:0,max:127,def:64,note:""},
+        {name:"Feedback",cc:19,min:0,max:127,def:0,note:""},
+        {name:"HP Filter",cc:20,min:0,max:127,def:0,note:""},
+        {name:"LP Filter",cc:21,min:0,max:127,def:127,note:""},
+        {name:"Reverb Send",cc:22,min:0,max:127,def:0,note:""},
+        {name:"Mix Volume",cc:23,min:0,max:127,def:0,note:""},
+      ],
+      "FX Reverb": [
+        {name:"Predelay",cc:24,min:0,max:127,def:0,note:""},
+        {name:"Decay Time",cc:25,min:0,max:127,def:64,note:""},
+        {name:"Shelving Freq",cc:26,min:0,max:127,def:64,note:""},
+        {name:"Shelving Gain",cc:27,min:0,max:127,def:64,note:""},
+        {name:"HP Filter",cc:28,min:0,max:127,def:0,note:""},
+        {name:"LP Filter",cc:29,min:0,max:127,def:127,note:""},
+        {name:"Mix Volume",cc:31,min:0,max:127,def:0,note:""},
+      ],
+      "FX Distortion": [
+        {name:"Amount",cc:70,min:0,max:127,def:0,note:""},
+        {name:"Symmetry",cc:71,min:0,max:127,def:64,note:""},
+        {name:"Overdrive",cc:72,min:0,max:127,def:0,note:""},
+      ],
+      "FX Compressor": [
+        {name:"Threshold",cc:78,min:0,max:127,def:64,note:""},
+        {name:"Attack Time",cc:79,min:0,max:6,def:0,note:""},
+        {name:"Release Time",cc:80,min:0,max:7,def:0,note:""},
+        {name:"Makeup Gain",cc:81,min:0,max:127,def:0,note:""},
+        {name:"Ratio",cc:82,min:0,max:3,def:0,note:"0:1:2,1:1:4,2:1:8,3:Max"},
+        {name:"Dry/Wet Mix",cc:84,min:0,max:127,def:64,note:""},
+        {name:"Output Volume",cc:85,min:0,max:127,def:100,note:""},
+      ],
+      "Synth General": [
+        {name:"Parameter 1",cc:16,min:0,max:127,def:0,note:""},
+        {name:"Parameter 2",cc:17,min:0,max:127,def:0,note:""},
+        {name:"Parameter 3",cc:18,min:0,max:127,def:0,note:""},
+        {name:"Parameter 4",cc:19,min:0,max:127,def:0,note:""},
+        {name:"Parameter 5",cc:20,min:0,max:127,def:0,note:""},
+        {name:"Parameter 6",cc:21,min:0,max:127,def:0,note:""},
+        {name:"Parameter 7",cc:22,min:0,max:127,def:0,note:""},
+        {name:"Parameter 8",cc:23,min:0,max:127,def:0,note:""},
+      ],
+    },
+    "Digitakt II": {
+      "Track": [
+        {name:"Mute",cc:94,min:0,max:1,def:0,note:"0:Unmuted,1:Muted"},
+        {name:"Level",cc:95,min:0,max:127,def:100,note:""},
+      ],
+      "Trig": [
+        {name:"Note",cc:3,min:0,max:127,def:60,note:""},
+        {name:"Velocity",cc:4,min:1,max:127,def:100,note:""},
+        {name:"Length",cc:5,min:0,max:127,def:0,note:""},
+        {name:"Filter Trig",cc:13,min:0,max:1,def:1,note:"0:Off,1:On"},
+        {name:"LFO Trig",cc:14,min:0,max:1,def:1,note:""},
+        {name:"Portamento Time",cc:9,min:0,max:127,def:0,note:""},
+        {name:"Portamento",cc:65,min:0,max:1,def:0,note:"0:Off,1:On"},
+      ],
+      "Source": [
+        {name:"Tune",cc:16,min:0,max:127,def:64,note:"centered"},
+        {name:"Play Mode",cc:17,min:0,max:3,def:3,note:"0:Rev,1:RevLoop,2:FwdLoop,3:Fwd"},
+        {name:"Sample Slot",cc:19,min:0,max:127,def:0,note:""},
+        {name:"Sample Bank",cc:24,min:0,max:127,def:0,note:""},
+        {name:"Sample Level",cc:23,min:0,max:127,def:100,note:""},
+        {name:"Parameter E",cc:20,min:0,max:127,def:0,note:""},
+        {name:"Parameter F",cc:21,min:0,max:127,def:0,note:""},
+        {name:"Parameter G",cc:22,min:0,max:127,def:0,note:""},
+      ],
+      "Filter": [
+        {name:"Attack Time",cc:70,min:0,max:127,def:0,note:""},
+        {name:"Decay Time",cc:71,min:0,max:127,def:64,note:""},
+        {name:"Sustain Level",cc:72,min:0,max:127,def:64,note:""},
+        {name:"Release Time",cc:73,min:0,max:127,def:0,note:""},
+        {name:"Frequency",cc:74,min:0,max:127,def:127,note:""},
+        {name:"Resonance",cc:75,min:0,max:127,def:0,note:""},
+        {name:"Filter Type",cc:76,min:0,max:127,def:0,note:""},
+        {name:"Env Depth",cc:77,min:0,max:127,def:64,note:"centered"},
+      ],
+      "Amp": [
+        {name:"Attack Time",cc:79,min:0,max:127,def:0,note:""},
+        {name:"Hold Time",cc:80,min:0,max:127,def:0,note:""},
+        {name:"Decay Time",cc:81,min:0,max:127,def:64,note:""},
+        {name:"Sustain Level",cc:82,min:0,max:127,def:64,note:""},
+        {name:"Release Time",cc:83,min:0,max:127,def:0,note:""},
+        {name:"Pan",cc:90,min:0,max:127,def:64,note:"centered"},
+        {name:"Volume",cc:89,min:0,max:127,def:100,note:""},
+      ],
+      "FX": [
+        {name:"Delay Send",cc:84,min:0,max:127,def:0,note:""},
+        {name:"Reverb Send",cc:85,min:0,max:127,def:0,note:""},
+        {name:"Chorus Send",cc:12,min:0,max:127,def:0,note:""},
+        {name:"Bit Reduction",cc:54,min:0,max:127,def:0,note:""},
+        {name:"Overdrive",cc:57,min:0,max:127,def:0,note:""},
+        {name:"Delay Time",cc:21,min:0,max:127,def:64,note:""},
+        {name:"Delay Pingpong",cc:22,min:0,max:1,def:0,note:""},
+        {name:"Delay Feedback",cc:24,min:0,max:127,def:0,note:""},
+        {name:"Delay HP Filter",cc:25,min:0,max:127,def:0,note:""},
+        {name:"Delay LP Filter",cc:26,min:0,max:127,def:127,note:""},
+        {name:"Delay Mix",cc:28,min:0,max:127,def:0,note:""},
+        {name:"Reverb Predelay",cc:29,min:0,max:127,def:0,note:""},
+        {name:"Reverb Decay",cc:30,min:0,max:127,def:64,note:""},
+        {name:"Reverb Mix",cc:92,min:0,max:127,def:0,note:""},
+        {name:"Chorus Depth",cc:16,min:0,max:127,def:0,note:""},
+        {name:"Chorus Speed",cc:9,min:0,max:127,def:64,note:""},
+        {name:"Chorus Mix",cc:14,min:0,max:127,def:0,note:""},
+      ],
+      "Mod": [
+        {name:"LFO 1 Speed",cc:102,min:0,max:127,def:64,note:""},
+        {name:"LFO 1 Multiplier",cc:103,min:0,max:23,def:0,note:""},
+        {name:"LFO 1 Fade",cc:104,min:0,max:127,def:64,note:"centered"},
+        {name:"LFO 1 Waveform",cc:106,min:0,max:6,def:0,note:"0:Tri,1:Sin,2:Sq,3:Saw"},
+        {name:"LFO 1 Phase",cc:107,min:0,max:127,def:0,note:""},
+        {name:"LFO 1 Mode",cc:108,min:0,max:4,def:0,note:"0:Free,1:Trig,2:Hold,3:One,4:Half"},
+        {name:"LFO 1 Depth",cc:109,min:0,max:127,def:64,note:"centered"},
+        {name:"LFO 2 Speed",cc:112,min:0,max:127,def:64,note:""},
+        {name:"LFO 2 Multiplier",cc:113,min:0,max:23,def:0,note:""},
+        {name:"LFO 2 Fade",cc:114,min:0,max:127,def:64,note:"centered"},
+        {name:"LFO 2 Depth",cc:119,min:0,max:127,def:64,note:"centered"},
+        {name:"LFO 3 Speed",cc:78,min:0,max:127,def:64,note:""},
+        {name:"LFO 3 Multiplier",cc:52,min:0,max:23,def:0,note:""},
+        {name:"LFO 3 Depth",cc:86,min:0,max:127,def:64,note:"centered"},
+      ],
+      "Mixer": [
+        {name:"Compressor Threshold",cc:111,min:0,max:127,def:64,note:""},
+        {name:"Compressor Attack",cc:112,min:0,max:127,def:0,note:""},
+        {name:"Compressor Release",cc:113,min:0,max:127,def:0,note:""},
+        {name:"Compressor Makeup",cc:114,min:0,max:127,def:0,note:""},
+        {name:"Compressor Pattern Volume",cc:119,min:0,max:127,def:100,note:""},
+        {name:"Compressor Ratio",cc:115,min:0,max:127,def:0,note:""},
+        {name:"Compressor Dry/Wet",cc:118,min:0,max:127,def:64,note:""},
+      ],
+    },
+    "Digitone II": {
+      "Track": [
+        {name:"Mute",cc:94,min:0,max:1,def:0,note:""},
+        {name:"Level",cc:95,min:0,max:127,def:100,note:""},
+      ],
+      "Trig": [
+        {name:"Note",cc:3,min:0,max:127,def:60,note:""},
+        {name:"Velocity",cc:4,min:0,max:127,def:100,note:""},
+        {name:"Length",cc:5,min:0,max:127,def:0,note:""},
+        {name:"Portamento Time",cc:9,min:0,max:127,def:0,note:""},
+        {name:"Portamento",cc:65,min:0,max:1,def:0,note:"0:Off,1:On"},
+      ],
+      "Synth Page 1": [
+        {name:"Page 1 Param A",cc:40,min:0,max:127,def:0,note:""},
+        {name:"Page 1 Param B",cc:41,min:0,max:127,def:0,note:""},
+        {name:"Page 1 Param C",cc:42,min:0,max:127,def:0,note:""},
+        {name:"Page 1 Param D",cc:43,min:0,max:127,def:0,note:""},
+        {name:"Page 1 Param E",cc:44,min:0,max:127,def:0,note:""},
+        {name:"Page 1 Param F",cc:45,min:0,max:127,def:0,note:""},
+        {name:"Page 1 Param G",cc:46,min:0,max:127,def:0,note:""},
+        {name:"Page 1 Param H",cc:47,min:0,max:127,def:0,note:""},
+      ],
+      "Synth Page 2": [
+        {name:"Page 2 Param A",cc:48,min:0,max:127,def:0,note:""},
+        {name:"Page 2 Param B",cc:49,min:0,max:127,def:0,note:""},
+        {name:"Page 2 Param C",cc:50,min:0,max:127,def:0,note:""},
+        {name:"Page 2 Param D",cc:51,min:0,max:127,def:0,note:""},
+        {name:"Page 2 Param E",cc:52,min:0,max:127,def:0,note:""},
+        {name:"Page 2 Param F",cc:53,min:0,max:127,def:0,note:""},
+        {name:"Page 2 Param G",cc:54,min:0,max:127,def:0,note:""},
+        {name:"Page 2 Param H",cc:55,min:0,max:127,def:0,note:""},
+      ],
+      "Synth Page 3": [
+        {name:"Page 3 Param A",cc:56,min:0,max:127,def:0,note:""},
+        {name:"Page 3 Param B",cc:57,min:0,max:127,def:0,note:""},
+        {name:"Page 3 Param C",cc:58,min:0,max:127,def:0,note:""},
+        {name:"Page 3 Param D",cc:59,min:0,max:127,def:0,note:""},
+        {name:"Page 3 Param E",cc:60,min:0,max:127,def:0,note:""},
+        {name:"Page 3 Param F",cc:61,min:0,max:127,def:0,note:""},
+        {name:"Page 3 Param G",cc:62,min:0,max:127,def:0,note:""},
+        {name:"Page 3 Param H",cc:63,min:0,max:127,def:0,note:""},
+      ],
+      "Synth Page 4": [
+        {name:"Page 4 Param A",cc:70,min:0,max:127,def:0,note:""},
+        {name:"Page 4 Param B",cc:71,min:0,max:127,def:0,note:""},
+        {name:"Page 4 Param C",cc:72,min:0,max:127,def:0,note:""},
+        {name:"Page 4 Param D",cc:73,min:0,max:127,def:0,note:""},
+        {name:"Page 4 Param E",cc:74,min:0,max:127,def:0,note:""},
+        {name:"Page 4 Param F",cc:75,min:0,max:127,def:0,note:""},
+        {name:"Page 4 Param G",cc:76,min:0,max:127,def:0,note:""},
+        {name:"Page 4 Param H",cc:77,min:0,max:127,def:0,note:""},
+      ],
+      "Filter": [
+        {name:"Attack Time",cc:20,min:0,max:127,def:0,note:""},
+        {name:"Decay Time",cc:21,min:0,max:127,def:64,note:""},
+        {name:"Sustain Level",cc:22,min:0,max:127,def:64,note:""},
+        {name:"Release Time",cc:23,min:0,max:127,def:0,note:""},
+        {name:"Frequency",cc:16,min:0,max:127,def:127,note:""},
+        {name:"Resonance",cc:17,min:0,max:127,def:0,note:""},
+        {name:"Type",cc:18,min:0,max:127,def:0,note:""},
+        {name:"Env Depth",cc:24,min:0,max:127,def:64,note:"centered"},
+      ],
+      "Amp": [
+        {name:"Attack Time",cc:84,min:0,max:127,def:0,note:""},
+        {name:"Hold Time",cc:85,min:0,max:127,def:0,note:""},
+        {name:"Decay Time",cc:86,min:0,max:127,def:64,note:""},
+        {name:"Release Time",cc:88,min:0,max:127,def:0,note:""},
+        {name:"Pan",cc:89,min:0,max:127,def:64,note:"centered"},
+        {name:"Volume",cc:90,min:0,max:127,def:100,note:""},
+      ],
+      "FX": [
+        {name:"Delay Send",cc:30,min:0,max:127,def:0,note:""},
+        {name:"Reverb Send",cc:31,min:0,max:127,def:0,note:""},
+        {name:"Chorus Send",cc:29,min:0,max:127,def:0,note:""},
+        {name:"Bit Reduction",cc:78,min:0,max:127,def:0,note:""},
+        {name:"Overdrive",cc:81,min:0,max:127,def:0,note:""},
+        {name:"Delay Time",cc:21,min:0,max:127,def:64,note:""},
+        {name:"Delay Feedback",cc:24,min:0,max:127,def:0,note:""},
+        {name:"Delay Mix",cc:28,min:0,max:127,def:0,note:""},
+        {name:"Reverb Predelay",cc:29,min:0,max:127,def:0,note:""},
+        {name:"Reverb Decay",cc:30,min:0,max:127,def:64,note:""},
+        {name:"Reverb Mix",cc:92,min:0,max:127,def:0,note:""},
+        {name:"Chorus Depth",cc:16,min:0,max:127,def:0,note:""},
+        {name:"Chorus Speed",cc:9,min:0,max:127,def:64,note:""},
+        {name:"Chorus Mix",cc:14,min:0,max:127,def:0,note:""},
+      ],
+      "Mod": [
+        {name:"LFO 1 Speed",cc:102,min:0,max:127,def:64,note:""},
+        {name:"LFO 1 Multiplier",cc:103,min:0,max:23,def:0,note:""},
+        {name:"LFO 1 Fade",cc:104,min:0,max:127,def:64,note:""},
+        {name:"LFO 1 Waveform",cc:106,min:0,max:6,def:0,note:"0:Tri,1:Sin,2:Sq,3:Saw"},
+        {name:"LFO 1 Phase",cc:107,min:0,max:127,def:0,note:""},
+        {name:"LFO 1 Mode",cc:108,min:0,max:4,def:0,note:""},
+        {name:"LFO 1 Depth",cc:109,min:0,max:127,def:64,note:"centered"},
+        {name:"LFO 2 Speed",cc:111,min:0,max:127,def:64,note:""},
+        {name:"LFO 2 Multiplier",cc:112,min:0,max:23,def:0,note:""},
+        {name:"LFO 2 Fade",cc:113,min:0,max:127,def:64,note:""},
+        {name:"LFO 2 Depth",cc:118,min:0,max:127,def:64,note:"centered"},
+      ],
+      "Mixer": [
+        {name:"Compressor Threshold",cc:111,min:0,max:127,def:64,note:""},
+        {name:"Compressor Attack",cc:112,min:0,max:127,def:0,note:""},
+        {name:"Compressor Release",cc:113,min:0,max:127,def:0,note:""},
+        {name:"Compressor Makeup",cc:114,min:0,max:127,def:0,note:""},
+        {name:"Compressor Ratio",cc:115,min:0,max:127,def:0,note:""},
+        {name:"Compressor Dry/Wet",cc:118,min:0,max:127,def:64,note:""},
+      ],
+    },
+    "Tonverk": {
+      "Track": [
+        {name:"Global Mute",cc:94,min:0,max:1,def:0,note:"0:Unmuted,1:Muted"},
+        {name:"Level",cc:95,min:0,max:127,def:100,note:""},
+      ],
+      "Audio Track: Trig": [
+        {name:"Note",cc:3,min:0,max:127,def:60,note:""},
+        {name:"Velocity",cc:4,min:0,max:127,def:100,note:""},
+        {name:"Note Length",cc:5,min:0,max:127,def:0,note:""},
+        {name:"Portamento Time",cc:9,min:0,max:127,def:0,note:""},
+        {name:"Portamento Enabled",cc:65,min:0,max:1,def:0,note:"0:Off,1:On"},
+      ],
+      "Audio Track: Source": [
+        {name:"Parameter A",cc:16,min:0,max:127,def:0,note:""},
+        {name:"Parameter B",cc:17,min:0,max:127,def:0,note:""},
+        {name:"Parameter C",cc:18,min:0,max:127,def:0,note:""},
+        {name:"Parameter D",cc:19,min:0,max:127,def:0,note:""},
+        {name:"Parameter E",cc:20,min:0,max:127,def:0,note:""},
+        {name:"Parameter F",cc:21,min:0,max:127,def:0,note:""},
+        {name:"Parameter G",cc:22,min:0,max:127,def:0,note:""},
+        {name:"Parameter H",cc:23,min:0,max:127,def:0,note:""},
+      ],
+      "Audio Track: Filter": [
+        {name:"Parameter A",cc:70,min:0,max:127,def:127,note:""},
+        {name:"Parameter B",cc:71,min:0,max:127,def:0,note:""},
+        {name:"Parameter C",cc:72,min:0,max:127,def:0,note:""},
+        {name:"Parameter D",cc:73,min:0,max:127,def:0,note:""},
+        {name:"Parameter E",cc:74,min:0,max:127,def:127,note:""},
+        {name:"Parameter F",cc:75,min:0,max:127,def:0,note:""},
+        {name:"Parameter G",cc:76,min:0,max:127,def:0,note:""},
+        {name:"Parameter H",cc:77,min:0,max:127,def:0,note:""},
+        {name:"Base",cc:78,min:0,max:127,def:0,note:""},
+        {name:"Width",cc:79,min:0,max:127,def:0,note:""},
+      ],
+      "Audio Track: Amp": [
+        {name:"Attack",cc:83,min:0,max:127,def:0,note:""},
+        {name:"Hold",cc:84,min:0,max:127,def:0,note:"127:Note"},
+        {name:"Decay",cc:85,min:0,max:127,def:64,note:""},
+        {name:"Sustain",cc:86,min:0,max:127,def:64,note:""},
+        {name:"Release",cc:87,min:0,max:127,def:0,note:""},
+        {name:"Overdrive",cc:88,min:0,max:127,def:0,note:""},
+        {name:"Pan",cc:10,min:0,max:127,def:64,note:"centered"},
+        {name:"Volume",cc:89,min:0,max:127,def:100,note:""},
+      ],
+      "Audio Track: FX": [
+        {name:"Send 1 Amount",cc:44,min:0,max:127,def:0,note:""},
+        {name:"Send 2 Amount",cc:45,min:0,max:127,def:0,note:""},
+        {name:"Send 3 Amount",cc:46,min:0,max:127,def:0,note:""},
+        {name:"Routing Destination",cc:47,min:0,max:6,def:0,note:"0:Mix AB,1:Out CD,2:Out EF,3-6:Bus"},
+        {name:"FX 1 Parameter A",cc:48,min:0,max:127,def:0,note:""},
+        {name:"FX 1 Parameter B",cc:49,min:0,max:127,def:0,note:""},
+        {name:"FX 1 Parameter C",cc:50,min:0,max:127,def:0,note:""},
+        {name:"FX 1 Parameter D",cc:51,min:0,max:127,def:0,note:""},
+        {name:"FX 1 Parameter E",cc:52,min:0,max:127,def:0,note:""},
+        {name:"FX 1 Parameter F",cc:53,min:0,max:127,def:0,note:""},
+        {name:"FX 1 Parameter G",cc:54,min:0,max:127,def:0,note:""},
+        {name:"FX 1 Parameter H",cc:55,min:0,max:127,def:0,note:""},
+        {name:"FX 2 Parameter A",cc:56,min:0,max:127,def:0,note:""},
+        {name:"FX 2 Parameter B",cc:57,min:0,max:127,def:0,note:""},
+        {name:"FX 2 Parameter C",cc:58,min:0,max:127,def:0,note:""},
+        {name:"FX 2 Parameter D",cc:59,min:0,max:127,def:0,note:""},
+        {name:"FX 2 Parameter E",cc:60,min:0,max:127,def:0,note:""},
+        {name:"FX 2 Parameter F",cc:61,min:0,max:127,def:0,note:""},
+        {name:"FX 2 Parameter G",cc:62,min:0,max:127,def:0,note:""},
+        {name:"FX 2 Parameter H",cc:63,min:0,max:127,def:0,note:""},
+      ],
+      "Audio Track: Mod": [
+        {name:"Voice LFO 1 Speed",cc:102,min:0,max:127,def:64,note:""},
+        {name:"Voice LFO 1 Multiplier",cc:103,min:0,max:23,def:0,note:"0:BPM1"},
+        {name:"Voice LFO 1 Depth",cc:104,min:0,max:127,def:64,note:""},
+        {name:"Voice LFO 2 Speed",cc:105,min:0,max:127,def:64,note:""},
+        {name:"Voice LFO 2 Multiplier",cc:106,min:0,max:23,def:0,note:""},
+        {name:"Voice LFO 2 Depth",cc:107,min:0,max:127,def:64,note:""},
+        {name:"Mod Env Depth",cc:110,min:0,max:127,def:64,note:""},
+        {name:"FX LFO 1 Speed",cc:111,min:0,max:127,def:64,note:""},
+        {name:"FX LFO 1 Multiplier",cc:112,min:0,max:23,def:0,note:""},
+        {name:"FX LFO 1 Depth",cc:113,min:0,max:127,def:64,note:""},
+        {name:"FX LFO 2 Speed",cc:114,min:0,max:127,def:64,note:""},
+        {name:"FX LFO 2 Multiplier",cc:115,min:0,max:23,def:0,note:""},
+        {name:"FX LFO 2 Depth",cc:116,min:0,max:127,def:64,note:""},
+      ],
+      "Bus Track: FX": [
+        {name:"Send 1 Amount",cc:44,min:0,max:127,def:0,note:""},
+        {name:"Send 2 Amount",cc:45,min:0,max:127,def:0,note:""},
+        {name:"Send 3 Amount",cc:46,min:0,max:127,def:0,note:""},
+        {name:"Routing Destination",cc:47,min:0,max:2,def:0,note:"0:Mix AB"},
+        {name:"FX 1 Parameter A",cc:48,min:0,max:127,def:0,note:""},
+        {name:"FX 1 Parameter B",cc:49,min:0,max:127,def:0,note:""},
+        {name:"FX 1 Parameter C",cc:50,min:0,max:127,def:0,note:""},
+        {name:"FX 1 Parameter D",cc:51,min:0,max:127,def:0,note:""},
+        {name:"FX 1 Parameter E",cc:52,min:0,max:127,def:0,note:""},
+        {name:"FX 1 Parameter F",cc:53,min:0,max:127,def:0,note:""},
+        {name:"FX 1 Parameter G",cc:54,min:0,max:127,def:0,note:""},
+        {name:"FX 1 Parameter H",cc:55,min:0,max:127,def:0,note:""},
+        {name:"FX 2 Parameter A",cc:56,min:0,max:127,def:0,note:""},
+        {name:"FX 2 Parameter B",cc:57,min:0,max:127,def:0,note:""},
+        {name:"FX 2 Parameter C",cc:58,min:0,max:127,def:0,note:""},
+        {name:"FX 2 Parameter D",cc:59,min:0,max:127,def:0,note:""},
+      ],
+      "Bus/Send Track: Mod": [
+        {name:"LFO 1 Speed",cc:111,min:0,max:127,def:64,note:""},
+        {name:"LFO 1 Multiplier",cc:112,min:0,max:23,def:0,note:""},
+        {name:"LFO 1 Depth",cc:113,min:0,max:127,def:64,note:""},
+        {name:"LFO 2 Speed",cc:114,min:0,max:127,def:64,note:""},
+        {name:"LFO 2 Multiplier",cc:115,min:0,max:23,def:0,note:""},
+        {name:"LFO 2 Depth",cc:116,min:0,max:127,def:64,note:""},
+      ],
+      "Mix Track: Source": [
+        {name:"In A Level",cc:16,min:0,max:127,def:100,note:""},
+        {name:"In A Pan",cc:17,min:0,max:127,def:64,note:"centered"},
+        {name:"In A Routing",cc:18,min:0,max:15,def:0,note:"0:Mix AB"},
+        {name:"In B Level",cc:20,min:0,max:127,def:100,note:""},
+        {name:"In B Pan",cc:21,min:0,max:127,def:64,note:"centered"},
+        {name:"In B Routing",cc:22,min:0,max:15,def:0,note:""},
+      ],
+      "Mix Track: Levels": [
+        {name:"Track 1 Level",cc:70,min:0,max:127,def:100,note:""},
+        {name:"Track 2 Level",cc:71,min:0,max:127,def:100,note:""},
+        {name:"Track 3 Level",cc:72,min:0,max:127,def:100,note:""},
+        {name:"Track 4 Level",cc:73,min:0,max:127,def:100,note:""},
+        {name:"Track 5 Level",cc:74,min:0,max:127,def:100,note:""},
+        {name:"Track 6 Level",cc:75,min:0,max:127,def:100,note:""},
+        {name:"Track 7 Level",cc:76,min:0,max:127,def:100,note:""},
+        {name:"Track 8 Level",cc:77,min:0,max:127,def:100,note:""},
+        {name:"Bus 1 Level",cc:78,min:0,max:127,def:100,note:""},
+        {name:"Bus 2 Level",cc:79,min:0,max:127,def:100,note:""},
+      ],
+      "FX: Chrono Pitch": [
+        {name:"FX 1 Tune",cc:48,min:0,max:127,def:64,note:""},
+        {name:"FX 1 Window",cc:49,min:0,max:127,def:0,note:""},
+        {name:"FX 1 Feedback",cc:50,min:0,max:127,def:0,note:""},
+        {name:"FX 1 LFO Depth",cc:51,min:0,max:127,def:0,note:""},
+        {name:"FX 1 HP Filter",cc:52,min:0,max:127,def:0,note:""},
+        {name:"FX 1 LP Filter",cc:53,min:0,max:127,def:127,note:""},
+        {name:"FX 1 LFO Speed",cc:54,min:0,max:127,def:64,note:""},
+        {name:"FX 1 Dry/Wet",cc:55,min:0,max:127,def:64,note:""},
+        {name:"FX 2 Tune",cc:56,min:0,max:127,def:64,note:""},
+        {name:"FX 2 Window",cc:57,min:0,max:127,def:0,note:""},
+        {name:"FX 2 Feedback",cc:58,min:0,max:127,def:0,note:""},
+        {name:"FX 2 LFO Depth",cc:59,min:0,max:127,def:0,note:""},
+        {name:"FX 2 HP Filter",cc:60,min:0,max:127,def:0,note:""},
+        {name:"FX 2 LP Filter",cc:61,min:0,max:127,def:127,note:""},
+        {name:"FX 2 LFO Speed",cc:62,min:0,max:127,def:64,note:""},
+        {name:"FX 2 Dry/Wet",cc:63,min:0,max:127,def:64,note:""},
+      ],
+      "FX: Compressor": [
+        {name:"FX 1 Threshold",cc:48,min:0,max:127,def:64,note:""},
+        {name:"FX 1 Attack",cc:49,min:0,max:127,def:0,note:""},
+        {name:"FX 1 Release",cc:50,min:0,max:127,def:0,note:""},
+        {name:"FX 1 Makeup Gain",cc:51,min:0,max:127,def:0,note:""},
+        {name:"FX 1 Ratio",cc:52,min:0,max:127,def:0,note:""},
+        {name:"FX 1 Sidechain Source",cc:53,min:0,max:14,def:0,note:""},
+        {name:"FX 1 Sidechain Filter",cc:54,min:0,max:127,def:64,note:""},
+        {name:"FX 1 Mix",cc:55,min:0,max:127,def:127,note:""},
+        {name:"FX 2 Threshold",cc:56,min:0,max:127,def:64,note:""},
+        {name:"FX 2 Attack",cc:57,min:0,max:127,def:0,note:""},
+        {name:"FX 2 Release",cc:58,min:0,max:127,def:0,note:""},
+        {name:"FX 2 Makeup Gain",cc:59,min:0,max:127,def:0,note:""},
+        {name:"FX 2 Ratio",cc:60,min:0,max:127,def:0,note:""},
+        {name:"FX 2 Sidechain Source",cc:61,min:0,max:14,def:0,note:""},
+        {name:"FX 2 Mix",cc:63,min:0,max:127,def:127,note:""},
+      ],
+      "FX: Daisy Delay": [
+        {name:"FX 1 Drive",cc:48,min:0,max:127,def:0,note:""},
+        {name:"FX 1 Delay Division",cc:49,min:0,max:127,def:64,note:""},
+        {name:"FX 1 Feedback",cc:50,min:0,max:127,def:0,note:""},
+        {name:"FX 1 Width",cc:51,min:0,max:127,def:64,note:""},
+        {name:"FX 1 Modulation",cc:52,min:0,max:127,def:0,note:""},
+        {name:"FX 1 Filter",cc:54,min:0,max:127,def:64,note:""},
+        {name:"FX 1 Mix",cc:55,min:0,max:127,def:64,note:""},
+        {name:"FX 2 Drive",cc:56,min:0,max:127,def:0,note:""},
+        {name:"FX 2 Delay Division",cc:57,min:0,max:127,def:64,note:""},
+        {name:"FX 2 Feedback",cc:58,min:0,max:127,def:0,note:""},
+        {name:"FX 2 Width",cc:59,min:0,max:127,def:64,note:""},
+        {name:"FX 2 Modulation",cc:60,min:0,max:127,def:0,note:""},
+        {name:"FX 2 Mix",cc:63,min:0,max:127,def:64,note:""},
+      ],
+      "FX: Degrader": [
+        {name:"FX 1 Bit Reduction",cc:48,min:0,max:127,def:127,note:""},
+        {name:"FX 1 Overdrive",cc:49,min:0,max:127,def:0,note:""},
+        {name:"FX 1 Sample Rate Redux",cc:50,min:0,max:127,def:127,note:""},
+        {name:"FX 1 Drop-outs",cc:51,min:0,max:127,def:0,note:""},
+        {name:"FX 1 Mod Rate",cc:52,min:0,max:127,def:64,note:""},
+        {name:"FX 1 Mod Depth",cc:53,min:0,max:127,def:0,note:""},
+        {name:"FX 1 Freeze",cc:54,min:0,max:127,def:0,note:""},
+        {name:"FX 1 Freeze Time",cc:55,min:0,max:127,def:0,note:""},
+        {name:"FX 2 Bit Reduction",cc:56,min:0,max:127,def:127,note:""},
+        {name:"FX 2 Overdrive",cc:57,min:0,max:127,def:0,note:""},
+        {name:"FX 2 Sample Rate Redux",cc:58,min:0,max:127,def:127,note:""},
+        {name:"FX 2 Drop-outs",cc:59,min:0,max:127,def:0,note:""},
+        {name:"FX 2 Freeze",cc:62,min:0,max:127,def:0,note:""},
+        {name:"FX 2 Freeze Time",cc:63,min:0,max:127,def:0,note:""},
+      ],
+      "FX: Dirtshaper": [
+        {name:"FX 1 Drive",cc:48,min:0,max:127,def:0,note:""},
+        {name:"FX 1 Rectify",cc:49,min:0,max:127,def:0,note:""},
+        {name:"FX 1 HPF",cc:50,min:0,max:127,def:64,note:""},
+        {name:"FX 1 LPF",cc:51,min:0,max:127,def:127,note:""},
+        {name:"FX 1 Noise Amount",cc:52,min:0,max:127,def:0,note:""},
+        {name:"FX 1 Noise Frequency",cc:53,min:0,max:127,def:64,note:""},
+        {name:"FX 1 Noise Resonance",cc:54,min:0,max:127,def:0,note:""},
+        {name:"FX 1 Dry/Wet",cc:55,min:0,max:127,def:127,note:""},
+        {name:"FX 2 Drive",cc:56,min:0,max:127,def:0,note:""},
+        {name:"FX 2 Rectify",cc:57,min:0,max:127,def:0,note:""},
+        {name:"FX 2 LPF",cc:59,min:0,max:127,def:127,note:""},
+        {name:"FX 2 Noise Amount",cc:60,min:0,max:127,def:0,note:""},
+        {name:"FX 2 Dry/Wet",cc:63,min:0,max:127,def:127,note:""},
+      ],
+      "FX: Filter Folder": [
+        {name:"FX 1 In",cc:48,min:0,max:127,def:64,note:""},
+        {name:"FX 1 High Pass",cc:49,min:0,max:127,def:0,note:""},
+        {name:"FX 1 Folder",cc:50,min:0,max:127,def:0,note:""},
+        {name:"FX 1 Out",cc:51,min:0,max:127,def:64,note:""},
+        {name:"FX 1 Frequency",cc:52,min:0,max:127,def:64,note:""},
+        {name:"FX 1 Resonance",cc:53,min:0,max:127,def:0,note:""},
+        {name:"FX 1 Type",cc:54,min:0,max:7,def:0,note:""},
+        {name:"FX 1 Post Distortion",cc:55,min:0,max:127,def:0,note:""},
+        {name:"FX 2 In",cc:56,min:0,max:127,def:64,note:""},
+        {name:"FX 2 Frequency",cc:60,min:0,max:127,def:64,note:""},
+        {name:"FX 2 Resonance",cc:61,min:0,max:127,def:0,note:""},
+        {name:"FX 2 Post Distortion",cc:63,min:0,max:127,def:0,note:""},
+      ],
+      "FX: Comb Filter": [
+        {name:"FX 1 Mod Speed",cc:48,min:0,max:127,def:64,note:""},
+        {name:"FX 1 Mod Depth",cc:49,min:0,max:127,def:0,note:""},
+        {name:"FX 1 Start Phase",cc:50,min:0,max:127,def:0,note:""},
+        {name:"FX 1 Detune",cc:51,min:0,max:127,def:64,note:""},
+        {name:"FX 1 Frequency",cc:52,min:0,max:127,def:64,note:""},
+        {name:"FX 1 Feedback",cc:53,min:0,max:127,def:0,note:""},
+        {name:"FX 1 Lowpass Filter",cc:54,min:0,max:127,def:127,note:""},
+        {name:"FX 1 Mix",cc:55,min:0,max:127,def:64,note:""},
+        {name:"FX 2 Mod Speed",cc:56,min:0,max:127,def:64,note:""},
+        {name:"FX 2 Frequency",cc:60,min:0,max:127,def:64,note:""},
+        {name:"FX 2 Feedback",cc:61,min:0,max:127,def:0,note:""},
+        {name:"FX 2 Mix",cc:63,min:0,max:127,def:64,note:""},
+      ],
+    },
+  },
+  "Knobula": {
+    "Pianophonic": {
+      "System": [
+        {name:"Main volume",cc:7,min:0,max:127,def:100,note:"0-127:Mute to +9dB"},
+        {name:"All sounds off",cc:120,min:0,max:0,def:0,note:""},
+      ],
+      "Envelope": [
+        {name:"Attack offset",cc:73,min:0,max:127,def:64,note:""},
+        {name:"Decay offset",cc:75,min:0,max:127,def:64,note:""},
+        {name:"Release offset",cc:72,min:0,max:127,def:64,note:""},
+      ],
+      "Filter": [
+        {name:"Filter offset",cc:74,min:0,max:127,def:64,note:""},
+      ],
+      "Oscillator": [
+        {name:"Detune offset",cc:94,min:0,max:127,def:64,note:""},
+        {name:"Start position offset",cc:78,min:0,max:127,def:64,note:""},
+        {name:"Morph speed offset",cc:77,min:0,max:127,def:64,note:""},
+      ],
+      "Effects": [
+        {name:"Reverb send scaling",cc:92,min:0,max:127,def:64,note:"64=unity"},
+      ],
+      "Voice": [
+        {name:"Chord select",cc:1,min:0,max:127,def:0,note:"0-127:chord slot"},
+      ],
+    
+      "Calibration": [
+        {name:"V/Oct slope",cc:23,min:0,max:127,def:64,note:"64=1V/Oct"},
+        {name:"V/Oct offset",cc:24,min:0,max:127,def:64,note:"64=no offset"},
+        
+      ],
+    },
+  },
+  "KORG": {
+    "minilogue xd": {
+      "VCO 1": [
+        {name:"Pitch",cc:34,min:0,max:127,def:64,note:""},
+        {name:"Shape",cc:36,min:0,max:127,def:0,note:""},
+        {name:"Level",cc:39,min:0,max:127,def:100,note:""},
+        {name:"Octave",cc:48,min:0,max:127,def:64,note:"0-31:16',32-63:8',64-95:4',96-127:2'"},
+        {name:"Wave",cc:50,min:0,max:127,def:0,note:"0-42:Sq,43-85:Tri,86-127:Saw"},
+      ],
+      "VCO 2": [
+        {name:"Pitch",cc:35,min:0,max:127,def:64,note:""},
+        {name:"Shape",cc:37,min:0,max:127,def:0,note:""},
+        {name:"Level",cc:40,min:0,max:127,def:100,note:""},
+        {name:"Octave",cc:49,min:0,max:127,def:64,note:""},
+        {name:"Wave",cc:51,min:0,max:127,def:0,note:""},
+      ],
+      "Multi": [
+        {name:"Level",cc:33,min:0,max:127,def:100,note:""},
+        {name:"Type",cc:53,min:0,max:127,def:0,note:"0-42:Noise,43-85:VPM,86-127:USR"},
+        {name:"Shape",cc:54,min:0,max:127,def:0,note:""},
+      ],
+      "VCF": [
+        {name:"Cutoff",cc:43,min:0,max:127,def:127,note:""},
+        {name:"Resonance",cc:44,min:0,max:127,def:0,note:""},
+        {name:"Keytrack",cc:83,min:0,max:127,def:0,note:""},
+        {name:"Drive",cc:84,min:0,max:127,def:0,note:""},
+      {name:"Sync",cc:80,min:0,max:127,def:0,note:"0-63:On,64-127:Off"},
+        {name:"Ring",cc:81,min:0,max:127,def:0,note:"0-63:On,64-127:Off"},
+        ],
+      "EG": [
+        {name:"Attack",cc:20,min:0,max:127,def:0,note:""},
+        {name:"Decay",cc:21,min:0,max:127,def:64,note:""},
+        {name:"Int",cc:22,min:0,max:127,def:64,note:""},
+        {name:"Target",cc:23,min:0,max:127,def:0,note:"0-42:Cutoff,43-85:Pitch2,86-127:Pitch"},
+      ],
+      "VCA": [
+        {name:"Attack",cc:16,min:0,max:127,def:0,note:""},
+        {name:"Decay",cc:17,min:0,max:127,def:64,note:""},
+        {name:"Sustain",cc:18,min:0,max:127,def:64,note:""},
+        {name:"Release",cc:19,min:0,max:127,def:0,note:""},
+      ],
+      "LFO": [
+        {name:"Rate",cc:24,min:0,max:127,def:64,note:""},
+        {name:"Int",cc:26,min:0,max:127,def:0,note:""},
+        {name:"Target",cc:56,min:0,max:127,def:0,note:"0-42:Cutoff,43-85:Shape,86-127:Pitch"},
+        {name:"Wave",cc:57,min:0,max:127,def:0,note:""},
+        {name:"Mode",cc:58,min:0,max:127,def:0,note:""},
+      ],
+      "FX": [
+        {name:"Cross mod depth",cc:41,min:0,max:127,def:0,note:""},
+        {name:"Voice mode depth",cc:27,min:0,max:127,def:0,note:""},
+        {name:"Mod FX type",cc:88,min:0,max:127,def:0,note:"0-25:Chorus,26-51:Ensemble,52-76:Phaser"},
+        {name:"Mod FX time",cc:28,min:0,max:127,def:64,note:""},
+        {name:"Mod FX depth",cc:29,min:0,max:127,def:0,note:""},
+        {name:"Delay time",cc:105,min:0,max:127,def:64,note:""},
+        {name:"Delay depth",cc:106,min:0,max:127,def:0,note:""},
+        {name:"Delay dry/wet",cc:107,min:0,max:127,def:0,note:""},
+        {name:"Reverb time",cc:108,min:0,max:127,def:64,note:""},
+        {name:"Reverb depth",cc:109,min:0,max:127,def:0,note:""},
+        {name:"Reverb dry/wet",cc:110,min:0,max:127,def:0,note:""},
+        {name:"Mod FX on/off",cc:92,min:0,max:127,def:64,note:"64-127:On"},
+        {name:"Delay on/off",cc:93,min:0,max:127,def:64,note:""},
+        {name:"Reverb on/off",cc:94,min:0,max:127,def:64,note:""},
+      ],
+      "General": [
+        {name:"Portamento",cc:5,min:0,max:127,def:0,note:""},
+        {name:"Cross mod depth",cc:41,min:0,max:127,def:0,note:""},
+      {name:"Modulation 1",cc:1,min:0,max:127,def:0,note:""},
+        {name:"Modulation 2",cc:2,min:0,max:127,def:0,note:""},
+        ],
+    },
+  },
+  "Make Noise": {
+    "0-Coast": {
+      "General": [
+        {name:"Pitch bend scale A",cc:108,min:0,max:127,def:0,note:""},
+        {name:"Pitch bend scale B",cc:109,min:0,max:127,def:0,note:""},
+        {name:"Aftertouch scale A",cc:110,min:0,max:127,def:64,note:""},
+        {name:"Aftertouch scale B",cc:111,min:0,max:127,def:64,note:""},
+        {name:"Velocity scale A",cc:112,min:0,max:127,def:0,note:""},
+        {name:"Velocity scale B",cc:113,min:0,max:127,def:0,note:""},
+        {name:"Tempo divisor",cc:116,min:0,max:127,def:0,note:""},
+        {name:"Legato switch",cc:118,min:0,max:127,def:0,note:"0:Off,1-127:On"},
+      ],
+      "Arpeggiator": [
+        {name:"Arp switch",cc:117,min:0,max:127,def:0,note:"0:Off,1-127:On"},
+        {name:"Arp type",cc:119,min:0,max:127,def:0,note:"0:Traditional"},
+      ],
+      "MIDI and CV": [
+        {name:"MIDI A channel",cc:102,min:0,max:127,def:0,note:""},
+        {name:"MIDI B channel",cc:103,min:0,max:127,def:0,note:""},
+        {name:"MIDI A CV",cc:104,min:0,max:127,def:0,note:"0:Note,1:Vel,2:Mod,3-127:LFO"},
+        {name:"MIDI B CV",cc:105,min:0,max:127,def:0,note:""},
+        {name:"MIDI A gate",cc:106,min:0,max:127,def:0,note:"0:Note on,1:Vel>50%,2:Mod>50%,3-127:LFO"},
+        {name:"MIDI B gate",cc:107,min:0,max:127,def:0,note:""},
+        {name:"MIDI block switch",cc:114,min:0,max:127,def:0,note:"0:Off,1:On"},
+      ],
+    },
+  },
+  "Modbap": {
+    "Trinity": {
+      "General": [
+        {name:"Volume",cc:7,min:0,max:127,def:100,note:""},
+        {name:"Character",cc:70,min:0,max:127,def:64,note:"Primary timbre"},
+        {name:"Shape",cc:79,min:0,max:127,def:64,note:"Secondary timbre"},
+        {name:"Grit",cc:78,min:0,max:127,def:0,note:"Noise/tertiary"},
+        {name:"Decay",cc:72,min:0,max:127,def:64,note:"Envelope decay"},
+        {name:"Hold",cc:16,min:0,max:127,def:0,note:"Amp env hold"},
+        {name:"Clipper",cc:77,min:0,max:127,def:0,note:"Wave-shaping distortion"},
+        {name:"EQ",cc:74,min:0,max:127,def:64,note:"DJ-style filter"},
+        {name:"Sweep",cc:75,min:0,max:127,def:0,note:"Pitch mod depth"},
+        {name:"Time",cc:19,min:0,max:127,def:0,note:"Pitch sweep rate"},
+        {name:"Stack Spread",cc:86,min:0,max:127,def:0,note:""},
+      ],
+      "Mode": [
+        {name:"Cycle",cc:17,min:0,max:127,def:0,note:"0-42:Off,43-84:Round Robin,85-127:Random"},
+        {name:"Type",cc:18,min:0,max:127,def:0,note:"0-31:Block,32-62:Heap,63-93:Neon,94-127:Arcade"},
+        {name:"Stack",cc:85,min:0,max:127,def:0,note:"0-42:Off,43-84:2-Stack,85-127:3-Stack"},
+      ],
+    },
+  },
+  "Novation": {
+    "Circuit Rhythm": {
+      "Macro knobs": [
+        {name:"Tune",cc:21,min:4,max:124,def:64,note:""},
+        {name:"Start",cc:22,min:0,max:127,def:0,note:""},
+        {name:"Length",cc:23,min:0,max:127,def:127,note:""},
+        {name:"Slope",cc:24,min:0,max:127,def:64,note:""},
+        {name:"Distortion",cc:25,min:0,max:127,def:0,note:""},
+        {name:"HP Filter",cc:26,min:0,max:127,def:0,note:""},
+        {name:"LP Filter",cc:27,min:0,max:127,def:127,note:""},
+        {name:"Resonance",cc:28,min:0,max:127,def:0,note:""},
+      ],
+      "Voice": [
+        {name:"Sample choice",cc:8,min:0,max:127,def:0,note:""},
+        {name:"Playback mode",cc:12,min:0,max:2,def:0,note:""},
+        {name:"Reverse",cc:14,min:0,max:1,def:0,note:""},
+        {name:"Choke",cc:15,min:0,max:1,def:0,note:""},
+        {name:"Slice",cc:16,min:0,max:1,def:0,note:""},
+        {name:"Number of slices",cc:17,min:1,max:16,def:4,note:""},
+      ],
+      "Sampler": [
+        {name:"Pitch",cc:21,min:4,max:124,def:64,note:""},
+        {name:"Start coarse",cc:22,min:0,max:127,def:0,note:""},
+        {name:"Length coarse",cc:23,min:0,max:127,def:127,note:""},
+        {name:"Slope",cc:24,min:0,max:127,def:64,note:""},
+        {name:"Distortion",cc:25,min:0,max:127,def:0,note:""},
+        {name:"HPF",cc:26,min:0,max:127,def:0,note:""},
+        {name:"LPF",cc:27,min:0,max:127,def:127,note:""},
+        {name:"Resonance",cc:28,min:0,max:127,def:0,note:""},
+        {name:"Start fine",cc:86,min:0,max:127,def:0,note:""},
+        {name:"Length fine",cc:87,min:0,max:127,def:0,note:""},
+      ],
+      "Mixer": [
+        {name:"Level",cc:29,min:0,max:127,def:100,note:""},
+        {name:"Pan",cc:30,min:0,max:127,def:64,note:"centered"},
+        {name:"Reverb send",cc:31,min:0,max:127,def:0,note:""},
+        {name:"Delay send",cc:32,min:0,max:127,def:0,note:""},
+      ],
+      "Beat repeat": [
+        {name:"On/off",cc:39,min:0,max:1,def:0,note:""},
+        {name:"Rate",cc:40,min:0,max:10,def:0,note:""},
+        {name:"Dry/wet",cc:41,min:0,max:127,def:64,note:""},
+      ],
+      "Autofilter": [
+        {name:"On/off",cc:46,min:0,max:1,def:0,note:""},
+        {name:"Filter type",cc:47,min:0,max:3,def:0,note:""},
+        {name:"Frequency",cc:48,min:0,max:127,def:64,note:""},
+        {name:"LFO amount",cc:49,min:0,max:127,def:0,note:""},
+        {name:"LFO rate",cc:51,min:0,max:13,def:0,note:""},
+        {name:"Resonance",cc:52,min:0,max:127,def:0,note:""},
+      ],
+      "Digital lofi": [
+        {name:"On/off",cc:53,min:0,max:1,def:0,note:""},
+        {name:"Bits",cc:54,min:0,max:127,def:127,note:""},
+        {name:"Sample rate",cc:55,min:0,max:127,def:127,note:""},
+      ],
+      "Phaser": [
+        {name:"On/off",cc:56,min:0,max:1,def:0,note:""},
+        {name:"Rate",cc:57,min:0,max:13,def:0,note:""},
+        {name:"Depth",cc:58,min:0,max:127,def:0,note:""},
+        {name:"Feedback",cc:59,min:0,max:127,def:0,note:""},
+      ],
+      "LP HP filter": [
+        {name:"Frequency",cc:79,min:0,max:127,def:64,note:"centered"},
+        {name:"Resonance",cc:71,min:0,max:127,def:0,note:""},
+      ],
+    
+      "Reverser": [
+        {name:"Reverse on/off",cc:42,min:0,max:1,def:0,note:""},
+        {name:"Rate",cc:43,min:0,max:3,def:0,note:""},
+        
+      ],
+    
+      "Gator": [
+        {name:"Gator on/off",cc:44,min:0,max:1,def:0,note:""},
+        {name:"Rate",cc:45,min:0,max:11,def:0,note:""},
+        
+      ],
+    
+      "Vinyl": [
+        {name:"Vinyl on/off",cc:60,min:0,max:1,def:0,note:""},
+        {name:"Filter",cc:61,min:0,max:127,def:64,note:""},
+        {name:"Wobble",cc:62,min:0,max:127,def:0,note:""},
+        {name:"Crackle",cc:63,min:0,max:127,def:0,note:""},
+        {name:"Hiss",cc:65,min:0,max:127,def:0,note:""},
+        
+      ],
+    
+      "Audio input": [
+        {name:"Audio input level",cc:90,min:0,max:127,def:0,note:""},
+        
+      ],
+    },
+  },
+  "OXI": {
+    "Coral": {
+      "Filter": [
+        {name:"Cutoff",cc:1,min:0,max:127,def:127,note:""},
+        {name:"Resonance",cc:2,min:0,max:127,def:0,note:""},
+        {name:"Filter Env",cc:3,min:0,max:127,def:0,note:""},
+      ],
+      "Amp": [
+        {name:"Level",cc:4,min:0,max:127,def:100,note:""},
+        {name:"Pan",cc:5,min:0,max:127,def:64,note:""},
+        {name:"Amp Attack",cc:14,min:0,max:127,def:0,note:""},
+        {name:"Amp Decay",cc:15,min:0,max:127,def:64,note:""},
+        {name:"Sustain",cc:18,min:0,max:127,def:64,note:""},
+      ],
+      "Osc": [
+        {name:"Octave",cc:6,min:0,max:127,def:64,note:""},
+        {name:"Glide",cc:7,min:0,max:127,def:0,note:""},
+        {name:"Glide Mode",cc:8,min:0,max:127,def:0,note:"0:Always,1-127:Legato"},
+        {name:"Harmo",cc:11,min:0,max:127,def:64,note:""},
+        {name:"Timbre",cc:12,min:0,max:127,def:64,note:""},
+        {name:"Morph",cc:13,min:0,max:127,def:64,note:""},
+        {name:"Noise",cc:19,min:0,max:127,def:0,note:""},
+        {name:"Sound Engine",cc:30,min:0,max:127,def:0,note:""},
+      ],
+      "Mod": [
+        {name:"Mod Attack",cc:16,min:0,max:127,def:0,note:""},
+        {name:"Mod Decay",cc:17,min:0,max:127,def:64,note:""},
+      ],
+      "Efx": [
+        {name:"Chorus",cc:25,min:0,max:127,def:0,note:""},
+        {name:"Space",cc:26,min:0,max:127,def:0,note:""},
+        {name:"Delay",cc:27,min:0,max:127,def:0,note:""},
+        {name:"Space Length",cc:40,min:0,max:127,def:64,note:""},
+        {name:"Space Low Pass",cc:41,min:0,max:127,def:127,note:""},
+        {name:"Delay Time",cc:44,min:0,max:127,def:64,note:""},
+        {name:"Delay Feedback",cc:45,min:0,max:127,def:0,note:""},
+        {name:"Delay Spread",cc:46,min:0,max:127,def:0,note:""},
+        {name:"Delay Low Pass",cc:47,min:0,max:127,def:127,note:""},
+      ],
+    },
+  },
+  "Roland": {
+    "TR-1000": {
+      "Main": [
+        {name:"Ext in",cc:9,min:0,max:127,def:0,note:""},
+        {name:"Morph",cc:89,min:0,max:127,def:0,note:""},
+        {name:"Filter",cc:20,min:0,max:127,def:127,note:""},
+        {name:"Drive",cc:21,min:0,max:127,def:0,note:""},
+      ],
+      "Effects": [
+        {name:"Delay level",cc:12,min:0,max:127,def:0,note:""},
+        {name:"Delay time",cc:13,min:0,max:127,def:64,note:""},
+        {name:"Delay feedback",cc:14,min:0,max:127,def:0,note:""},
+        {name:"Master FX on",cc:15,min:0,max:127,def:0,note:""},
+        {name:"Master FX ctrl 1",cc:16,min:0,max:127,def:64,note:""},
+        {name:"Master FX ctrl 2",cc:17,min:0,max:127,def:64,note:""},
+        {name:"Master FX ctrl 3",cc:18,min:0,max:127,def:64,note:""},
+        {name:"Analog FX on",cc:19,min:0,max:127,def:0,note:""},
+        {name:"Reverb time",cc:90,min:0,max:127,def:64,note:""},
+        {name:"Reverb level",cc:91,min:0,max:127,def:0,note:""},
+      ],
+      "Bass drum": [
+        {name:"BD tune",cc:22,min:0,max:127,def:64,note:""},
+        {name:"BD decay",cc:23,min:0,max:127,def:64,note:""},
+        {name:"BD mix",cc:24,min:0,max:127,def:64,note:""},
+        {name:"BD ctrl 1",cc:25,min:0,max:127,def:64,note:""},
+        {name:"BD ctrl 2",cc:26,min:0,max:127,def:64,note:""},
+        {name:"BD ctrl 3",cc:27,min:0,max:127,def:64,note:""},
+        {name:"BD level",cc:28,min:0,max:127,def:100,note:""},
+      ],
+      "Snare drum": [
+        {name:"SD tune",cc:29,min:0,max:127,def:64,note:""},
+        {name:"SD decay",cc:30,min:0,max:127,def:64,note:""},
+        {name:"SD mix",cc:31,min:0,max:127,def:64,note:""},
+        {name:"SD ctrl 1",cc:46,min:0,max:127,def:64,note:""},
+        {name:"SD ctrl 2",cc:47,min:0,max:127,def:64,note:""},
+        {name:"SD ctrl 3",cc:48,min:0,max:127,def:64,note:""},
+        {name:"SD level",cc:49,min:0,max:127,def:100,note:""},
+      ],
+      "Low tom": [
+        {name:"LT tune",cc:50,min:0,max:127,def:64,note:""},
+        {name:"LT decay",cc:51,min:0,max:127,def:64,note:""},
+        {name:"LT mix",cc:52,min:0,max:127,def:64,note:""},
+        {name:"LT ctrl 1",cc:53,min:0,max:127,def:64,note:""},
+        {name:"LT ctrl 2",cc:54,min:0,max:127,def:64,note:""},
+        {name:"LT ctrl 3",cc:55,min:0,max:127,def:64,note:""},
+        {name:"LT level",cc:56,min:0,max:127,def:100,note:""},
+      ],
+      "High tom": [
+        {name:"HT tune",cc:57,min:0,max:127,def:64,note:""},
+        {name:"HT decay",cc:58,min:0,max:127,def:64,note:""},
+        {name:"HT mix",cc:59,min:0,max:127,def:64,note:""},
+        {name:"HT ctrl 1",cc:60,min:0,max:127,def:64,note:""},
+        {name:"HT ctrl 2",cc:61,min:0,max:127,def:64,note:""},
+        {name:"HT ctrl 3",cc:62,min:0,max:127,def:64,note:""},
+        {name:"HT level",cc:63,min:0,max:127,def:100,note:""},
+      ],
+      "Rimshot": [
+        {name:"RS tune",cc:80,min:0,max:127,def:64,note:""},
+        {name:"RS decay",cc:81,min:0,max:127,def:64,note:""},
+        {name:"RS ctrl",cc:82,min:0,max:127,def:64,note:""},
+        {name:"RS level",cc:83,min:0,max:127,def:100,note:""},
+      ],
+      "Hi conga": [
+        {name:"HC tune",cc:84,min:0,max:127,def:64,note:""},
+        {name:"HC decay",cc:85,min:0,max:127,def:64,note:""},
+        {name:"HC ctrl",cc:86,min:0,max:127,def:64,note:""},
+        {name:"HC level",cc:87,min:0,max:127,def:100,note:""},
+      ],
+      "Closed hi-hat": [
+        {name:"CH tune",cc:102,min:0,max:127,def:64,note:""},
+        {name:"CH decay",cc:103,min:0,max:127,def:64,note:""},
+        {name:"CH ctrl",cc:104,min:0,max:127,def:64,note:""},
+        {name:"CH level",cc:105,min:0,max:127,def:100,note:""},
+      ],
+      "Open hi-hat": [
+        {name:"OH tune",cc:106,min:0,max:127,def:64,note:""},
+        {name:"OH decay",cc:107,min:0,max:127,def:64,note:""},
+        {name:"OH ctrl",cc:108,min:0,max:127,def:64,note:""},
+        {name:"OH level",cc:109,min:0,max:127,def:100,note:""},
+      ],
+      "Crash cymbal": [
+        {name:"CC tune",cc:110,min:0,max:127,def:64,note:""},
+        {name:"CC decay",cc:111,min:0,max:127,def:64,note:""},
+        {name:"CC ctrl",cc:112,min:0,max:127,def:64,note:""},
+        {name:"CC level",cc:113,min:0,max:127,def:100,note:""},
+      ],
+      "Ride cymbal": [
+        {name:"RC tune",cc:114,min:0,max:127,def:64,note:""},
+        {name:"RC decay",cc:115,min:0,max:127,def:64,note:""},
+        {name:"RC ctrl",cc:116,min:0,max:127,def:64,note:""},
+        {name:"RC level",cc:117,min:0,max:127,def:100,note:""},
+      ],
+    },
+  },
+  "Sonicware": {
+    "ELZ_1 play V2": {
+      "OSC": [
+        {name:"OSC type select",cc:9,min:0,max:127,def:0,note:""},
+        {name:"OSC page 1-A",cc:12,min:0,max:127,def:0,note:""},
+        {name:"OSC page 1-B",cc:13,min:0,max:127,def:0,note:""},
+        {name:"OSC page 1-C",cc:14,min:0,max:127,def:0,note:""},
+        {name:"OSC page 1-D",cc:15,min:0,max:127,def:0,note:""},
+        {name:"OSC page 2-A",cc:16,min:0,max:127,def:0,note:""},
+        {name:"OSC page 2-B",cc:17,min:0,max:127,def:0,note:""},
+        {name:"OSC page 2-C",cc:18,min:0,max:127,def:0,note:""},
+        {name:"OSC page 2-D",cc:19,min:0,max:127,def:0,note:""},
+        {name:"OSC page 3-A",cc:20,min:0,max:127,def:0,note:""},
+        {name:"OSC page 3-B",cc:21,min:0,max:127,def:0,note:""},
+        {name:"OSC page 3-C",cc:22,min:0,max:127,def:0,note:""},
+        {name:"OSC page 3-D",cc:23,min:0,max:127,def:0,note:""},
+        {name:"OSC page 4-A",cc:24,min:0,max:127,def:0,note:""},
+        {name:"OSC page 4-B",cc:25,min:0,max:127,def:0,note:""},
+        {name:"OSC page 4-C",cc:26,min:0,max:127,def:0,note:""},
+        {name:"OSC page 4-D",cc:27,min:0,max:127,def:0,note:""},
+        {name:"OSC page 5-A",cc:28,min:0,max:127,def:0,note:""},
+        {name:"OSC page 5-B",cc:29,min:0,max:127,def:0,note:""},
+        {name:"OSC page 5-C",cc:30,min:0,max:127,def:0,note:""},
+        {name:"OSC page 5-D",cc:31,min:0,max:127,def:0,note:""},
+      ],
+      "Envelope": [
+        {name:"Type select",cc:75,min:0,max:127,def:0,note:""},
+        {name:"Attack time",cc:76,min:0,max:127,def:0,note:""},
+        {name:"Decay time",cc:77,min:0,max:127,def:64,note:""},
+        {name:"Sustain level",cc:78,min:0,max:127,def:64,note:""},
+        {name:"Release time",cc:79,min:0,max:127,def:0,note:""},
+        {name:"Release attack time",cc:80,min:0,max:127,def:0,note:""},
+        {name:"Release attack level",cc:81,min:0,max:127,def:0,note:""},
+        {name:"Attack curve",cc:82,min:0,max:127,def:0,note:""},
+        {name:"Decay curve",cc:83,min:0,max:127,def:0,note:""},
+        {name:"Release curve",cc:84,min:0,max:127,def:0,note:""},
+      ],
+      "Filter": [
+        {name:"Filter type select",cc:86,min:0,max:127,def:0,note:""},
+        {name:"Filter page 1-A",cc:87,min:0,max:127,def:127,note:""},
+        {name:"Filter page 1-B",cc:88,min:0,max:127,def:0,note:""},
+        {name:"Filter page 1-C",cc:89,min:0,max:127,def:0,note:""},
+        {name:"Filter page 1-D",cc:90,min:0,max:127,def:0,note:""},
+        {name:"Filter mod 1-A",cc:91,min:0,max:127,def:0,note:""},
+        {name:"Filter mod 1-B",cc:92,min:0,max:127,def:0,note:""},
+        {name:"Filter mod 1-C",cc:93,min:0,max:127,def:0,note:""},
+        {name:"Filter mod 1-D",cc:94,min:0,max:127,def:0,note:""},
+        {name:"Filter mod 2-A",cc:95,min:0,max:127,def:0,note:""},
+        {name:"Filter mod 2-B",cc:96,min:0,max:127,def:0,note:""},
+        {name:"Filter mod 2-C",cc:97,min:0,max:127,def:0,note:""},
+        {name:"Filter mod 2-D",cc:98,min:0,max:127,def:0,note:""},
+        {name:"Filter mod 3-A",cc:99,min:0,max:127,def:0,note:""},
+      ],
+      "EFFECTS": [
+        {name:"DRIVE/MOD type",cc:12,min:0,max:127,def:0,note:""},
+        {name:"DRIVE/MOD param A",cc:13,min:0,max:127,def:0,note:""},
+        {name:"DRIVE/MOD param B",cc:14,min:0,max:127,def:0,note:""},
+        {name:"DRIVE/MOD param C",cc:15,min:0,max:127,def:0,note:""},
+        {name:"DRIVE/MOD param D",cc:16,min:0,max:127,def:0,note:""},
+        {name:"MOD type",cc:17,min:0,max:127,def:0,note:""},
+        {name:"MOD param A",cc:18,min:0,max:127,def:0,note:""},
+        {name:"MOD param B",cc:19,min:0,max:127,def:0,note:""},
+        {name:"MOD param C",cc:20,min:0,max:127,def:0,note:""},
+        {name:"MOD param D",cc:21,min:0,max:127,def:0,note:""},
+        {name:"DELAY/REVERB type",cc:22,min:0,max:127,def:0,note:""},
+        {name:"DELAY/REVERB param A",cc:23,min:0,max:127,def:0,note:""},
+        {name:"DELAY/REVERB param B",cc:24,min:0,max:127,def:0,note:""},
+        {name:"DELAY/REVERB param C",cc:25,min:0,max:127,def:0,note:""},
+        {name:"DELAY/REVERB param D",cc:26,min:0,max:127,def:0,note:""},
+        {name:"REVERB/MASTER type",cc:27,min:0,max:127,def:0,note:""},
+        {name:"REVERB/MASTER param A",cc:28,min:0,max:127,def:0,note:""},
+        {name:"REVERB/MASTER param B",cc:29,min:0,max:127,def:0,note:""},
+        {name:"REVERB/MASTER param C",cc:30,min:0,max:127,def:0,note:""},
+        {name:"REVERB/MASTER param D",cc:31,min:0,max:127,def:0,note:""},
+      ],
+      "Mixer": [
+        {name:"Level",cc:7,min:0,max:127,def:100,note:""},
+        {name:"Mute",cc:8,min:0,max:127,def:0,note:""},
+        {name:"EFX send",cc:9,min:0,max:127,def:0,note:""},
+        {name:"Pan",cc:10,min:0,max:127,def:64,note:"centered"},
+      ],
+      "Layer": [
+        {name:"Pitch",cc:4,min:0,max:127,def:64,note:""},
+        {name:"Detune",cc:5,min:0,max:127,def:64,note:""},
+        {name:"Delay",cc:6,min:0,max:127,def:0,note:""},
+        {name:"Level",cc:7,min:0,max:127,def:100,note:""},
+        {name:"Enable",cc:8,min:0,max:127,def:127,note:""},
+      ],
+      "Memory": [
+        {name:"Voice mode select",cc:33,min:0,max:127,def:0,note:""},
+        {name:"Voice mode param A",cc:34,min:0,max:127,def:0,note:""},
+        {name:"Voice mode param B",cc:35,min:0,max:127,def:0,note:""},
+        {name:"Octave",cc:57,min:0,max:127,def:64,note:""},
+        {name:"Memory level",cc:54,min:0,max:127,def:100,note:""},
+        {name:"Arpeggiator type",cc:48,min:0,max:127,def:0,note:""},
+        {name:"Arp param 1",cc:49,min:0,max:127,def:0,note:""},
+        {name:"Arp param 2",cc:50,min:0,max:127,def:0,note:""},
+        {name:"Unison1 ON/OFF",cc:36,min:0,max:127,def:0,note:""},
+        {name:"Unison2 ON/OFF",cc:37,min:0,max:127,def:0,note:""},
+        {name:"Unison 1 pitch",cc:40,min:0,max:127,def:64,note:""},
+        {name:"Unison 1 detune",cc:44,min:0,max:127,def:64,note:""},
+        {name:"Pattern select",cc:60,min:0,max:127,def:0,note:""},
+        {name:"Loop select",cc:61,min:0,max:127,def:0,note:""},
+      ],
+    
+      "OSC Modulation pages": [
+        {name:"Mod 1 p1-A",cc:33,min:0,max:127,def:0,note:""},
+        {name:"Mod 1 p1-B",cc:34,min:0,max:127,def:0,note:""},
+        {name:"Mod 1 p1-C",cc:35,min:0,max:127,def:0,note:""},
+        {name:"Mod 1 p1-D",cc:36,min:0,max:127,def:0,note:""},
+        {name:"Mod 1 p2-A",cc:37,min:0,max:127,def:0,note:""},
+        {name:"Mod 1 p2-B",cc:38,min:0,max:127,def:0,note:""},
+        {name:"Mod 1 p2-C",cc:39,min:0,max:127,def:0,note:""},
+        {name:"Mod 1 p2-D",cc:40,min:0,max:127,def:0,note:""},
+        {name:"Mod 1 p3-A",cc:41,min:0,max:127,def:0,note:""},
+        {name:"Mod 1 p3-B",cc:42,min:0,max:127,def:0,note:""},
+        {name:"Mod 2 p1-A",cc:43,min:0,max:127,def:0,note:""},
+        {name:"Mod 2 p1-B",cc:44,min:0,max:127,def:0,note:""},
+        {name:"Mod 2 p1-C",cc:45,min:0,max:127,def:0,note:""},
+        {name:"Mod 2 p1-D",cc:46,min:0,max:127,def:0,note:""},
+        {name:"Mod 2 p2-A",cc:47,min:0,max:127,def:0,note:""},
+        {name:"Mod 2 p2-B",cc:48,min:0,max:127,def:0,note:""},
+        {name:"Mod 2 p2-C",cc:49,min:0,max:127,def:0,note:""},
+        {name:"Mod 2 p2-D",cc:50,min:0,max:127,def:0,note:""},
+        {name:"Mod 2 p3-A",cc:51,min:0,max:127,def:0,note:""},
+        {name:"Mod 2 p3-B",cc:52,min:0,max:127,def:0,note:""},
+        {name:"Mod 3 p1-A",cc:53,min:0,max:127,def:0,note:""},
+        {name:"Mod 3 p1-B",cc:54,min:0,max:127,def:0,note:""},
+        {name:"Mod 3 p1-C",cc:55,min:0,max:127,def:0,note:""},
+        {name:"Mod 3 p1-D",cc:56,min:0,max:127,def:0,note:""},
+        {name:"Mod 3 p2-A",cc:57,min:0,max:127,def:0,note:""},
+        {name:"Mod 3 p2-B",cc:58,min:0,max:127,def:0,note:""},
+        {name:"Mod 3 p2-C",cc:59,min:0,max:127,def:0,note:""},
+        {name:"Mod 3 p2-D",cc:60,min:0,max:127,def:0,note:""},
+        {name:"Mod 3 p3-A",cc:61,min:0,max:127,def:0,note:""},
+        {name:"Mod 3 p3-B",cc:62,min:0,max:127,def:0,note:""},
+        {name:"Mod 4 p1-A",cc:65,min:0,max:127,def:0,note:""},
+        {name:"Mod 4 p1-B",cc:66,min:0,max:127,def:0,note:""},
+        {name:"Mod 4 p1-C",cc:67,min:0,max:127,def:0,note:""},
+        {name:"Mod 4 p1-D",cc:68,min:0,max:127,def:0,note:""},
+        {name:"Mod 4 p2-A",cc:69,min:0,max:127,def:0,note:""},
+        {name:"Mod 4 p2-B",cc:70,min:0,max:127,def:0,note:""},
+        {name:"Mod 4 p2-C",cc:71,min:0,max:127,def:0,note:""},
+        {name:"Mod 4 p2-D",cc:72,min:0,max:127,def:0,note:""},
+        {name:"Mod 4 p3-A",cc:73,min:0,max:127,def:0,note:""},
+        {name:"Mod 4 p3-B",cc:74,min:0,max:127,def:0,note:""},
+        
+      ],
+    },
+  },
+  "Supercritical": {
+    "Redshift 6": {
+      "DCO": [
+        {name:"Detune",cc:76,min:0,max:127,def:0,note:""},
+        {name:"Balance",cc:77,min:0,max:127,def:64,note:""},
+        {name:"Drive",cc:78,min:0,max:127,def:0,note:""},
+        {name:"Character",cc:70,min:0,max:127,def:64,note:""},
+      ],
+      "VCF": [
+        {name:"Cutoff",cc:79,min:0,max:127,def:127,note:""},
+        {name:"Resonance",cc:71,min:0,max:127,def:0,note:""},
+        {name:"Env Amount",cc:73,min:0,max:127,def:64,note:""},
+        {name:"Filter Mode",cc:72,min:0,max:127,def:0,note:""},
+      ],
+      "VCF Env": [
+        {name:"Attack",cc:18,min:0,max:127,def:0,note:""},
+        {name:"Decay",cc:19,min:0,max:127,def:64,note:""},
+        {name:"Sustain",cc:20,min:0,max:127,def:64,note:""},
+        {name:"Release",cc:21,min:0,max:127,def:0,note:""},
+      ],
+      "Amp": [
+        {name:"Pan",cc:10,min:0,max:127,def:64,note:"centered"},
+        {name:"Volume",cc:7,min:0,max:127,def:100,note:""},
+      ],
+      "Amp Env": [
+        {name:"Attack",cc:14,min:0,max:127,def:0,note:""},
+        {name:"Decay",cc:15,min:0,max:127,def:64,note:""},
+        {name:"Sustain",cc:16,min:0,max:127,def:64,note:""},
+        {name:"Release",cc:17,min:0,max:127,def:0,note:""},
+      ],
+      "Voice": [
+        {name:"Stack",cc:75,min:1,max:8,def:1,note:""},
+        {name:"Detune",cc:76,min:0,max:127,def:0,note:""},
+      ],
+    },
+  },
+  "Synthstrom": {
+    "Deluge": {
+      "Oscillator 1": [
+        {name:"Pitch",cc:12,min:0,max:127,def:64,note:""},
+        {name:"Level",cc:21,min:0,max:127,def:100,note:""},
+        {name:"Pulse width",cc:23,min:0,max:127,def:64,note:""},
+        {name:"Wave position",cc:25,min:0,max:127,def:0,note:""},
+      ],
+      "Oscillator 2": [
+        {name:"Pitch",cc:13,min:0,max:127,def:64,note:""},
+        {name:"Level",cc:26,min:0,max:127,def:100,note:""},
+        {name:"Pulse width",cc:28,min:0,max:127,def:64,note:""},
+        {name:"Wave position",cc:30,min:0,max:127,def:0,note:""},
+      ],
+      "Low-pass filter": [
+        {name:"Frequency",cc:74,min:0,max:127,def:127,note:""},
+        {name:"Resonance",cc:71,min:0,max:127,def:0,note:""},
+        {name:"Morph",cc:70,min:0,max:127,def:0,note:""},
+      ],
+      "High-pass filter": [
+        {name:"Frequency",cc:81,min:0,max:127,def:0,note:""},
+        {name:"Resonance",cc:82,min:0,max:127,def:0,note:""},
+        {name:"Morph",cc:83,min:0,max:127,def:0,note:""},
+      ],
+      "Envelope 1": [
+        {name:"Attack",cc:73,min:0,max:127,def:0,note:""},
+        {name:"Decay",cc:75,min:0,max:127,def:64,note:""},
+        {name:"Sustain",cc:76,min:0,max:127,def:64,note:""},
+        {name:"Release",cc:72,min:0,max:127,def:0,note:""},
+      ],
+      "Envelope 2": [
+        {name:"Attack",cc:77,min:0,max:127,def:0,note:""},
+        {name:"Decay",cc:78,min:0,max:127,def:64,note:""},
+        {name:"Sustain",cc:79,min:0,max:127,def:64,note:""},
+        {name:"Release",cc:80,min:0,max:127,def:0,note:""},
+      ],
+      "Envelope 3": [
+        {name:"Attack",cc:102,min:0,max:127,def:0,note:""},
+        {name:"Decay",cc:103,min:0,max:127,def:64,note:""},
+        {name:"Sustain",cc:104,min:0,max:127,def:64,note:""},
+        {name:"Release",cc:105,min:0,max:127,def:0,note:""},
+      ],
+      "Envelope 4": [
+        {name:"Attack",cc:106,min:0,max:127,def:0,note:""},
+        {name:"Decay",cc:107,min:0,max:127,def:64,note:""},
+        {name:"Sustain",cc:108,min:0,max:127,def:64,note:""},
+        {name:"Release",cc:109,min:0,max:127,def:0,note:""},
+      ],
+      "LFOs": [
+        {name:"LFO 1 rate",cc:58,min:0,max:127,def:64,note:""},
+        {name:"LFO 2 rate",cc:59,min:0,max:127,def:64,note:""},
+        {name:"LFO 3 rate",cc:110,min:0,max:127,def:64,note:""},
+        {name:"LFO 4 rate",cc:111,min:0,max:127,def:64,note:""},
+      ],
+      "FM 1": [
+        {name:"Pitch",cc:14,min:0,max:127,def:64,note:""},
+        {name:"Level",cc:54,min:0,max:127,def:0,note:""},
+        {name:"Feedback",cc:55,min:0,max:127,def:0,note:""},
+      ],
+      "FM 2": [
+        {name:"Pitch",cc:15,min:0,max:127,def:64,note:""},
+        {name:"Level",cc:56,min:0,max:127,def:0,note:""},
+        {name:"Feedback",cc:57,min:0,max:127,def:0,note:""},
+      ],
+      "Delay": [
+        {name:"Amount",cc:52,min:0,max:127,def:0,note:""},
+        {name:"Rate",cc:53,min:0,max:127,def:64,note:""},
+      ],
+      "Reverb": [
+        {name:"Reverb amount",cc:91,min:0,max:127,def:0,note:""},
+      ],
+      "Distortion": [
+        {name:"Wavefolder",cc:19,min:0,max:127,def:0,note:""},
+        {name:"Bitcrush",cc:62,min:0,max:127,def:0,note:""},
+        {name:"Decimation",cc:63,min:0,max:127,def:0,note:""},
+      ],
+      "Modulation FX": [
+        {name:"Rate",cc:16,min:0,max:127,def:64,note:""},
+        {name:"Feedback",cc:17,min:0,max:127,def:0,note:""},
+        {name:"Offset",cc:18,min:0,max:127,def:64,note:""},
+        {name:"Depth",cc:93,min:0,max:127,def:0,note:""},
+      ],
+      "EQ": [
+        {name:"Bass frequency",cc:84,min:0,max:127,def:64,note:""},
+        {name:"Treble frequency",cc:85,min:0,max:127,def:64,note:""},
+        {name:"Bass",cc:86,min:0,max:127,def:64,note:""},
+        {name:"Treble",cc:87,min:0,max:127,def:64,note:""},
+      ],
+      "Master": [
+        {name:"Master pitch",cc:3,min:0,max:127,def:64,note:""},
+        {name:"Master level",cc:7,min:0,max:127,def:100,note:""},
+        {name:"Master pan",cc:10,min:0,max:127,def:64,note:"centered"},
+      {name:"Portamento",cc:5,min:0,max:127,def:0,note:""},
+        {name:"Stutter rate",cc:20,min:0,max:127,def:0,note:""},
+        ],
+      "Arpeggiator": [
+        {name:"Rate",cc:51,min:0,max:127,def:64,note:""},
+        {name:"Gate",cc:50,min:0,max:127,def:64,note:""},
+        {name:"Note probability",cc:46,min:0,max:127,def:127,note:""},
+        {name:"Ratchet amount",cc:45,min:0,max:127,def:0,note:""},
+        {name:"Sequence length",cc:43,min:0,max:127,def:16,note:""},
+        {name:"Reverse probability",cc:36,min:0,max:127,def:0,note:""},
+      ],
+      "Noise": [
+        {name:"Noise Volume",cc:41,min:0,max:127,def:0,note:""},
+      ],
+      "Sidechain": [
+        {name:"Sidechain shape",cc:60,min:0,max:127,def:64,note:""},
+        {name:"Sidechain level",cc:61,min:0,max:127,def:0,note:""},
+      ],
+      "Compressor": [
+        {name:"Threshold",cc:27,min:0,max:127,def:64,note:""},
+      ],
+      "High-pass filter (HPF)": [
+        {name:"HPF frequency",cc:81,min:0,max:127,def:0,note:""},
+        {name:"HPF resonance",cc:82,min:0,max:127,def:0,note:""},
+        {name:"HPF morph",cc:83,min:0,max:127,def:0,note:""},
+      ],
+    },
+  },
+};
+
+// ── DEVICE SELECTOR ───────────────────────────────────────────────────────────
+let deviceParams = {};
+let deviceName = '';
+let activeCat = '';
+
+function initDeviceSelector() {
+  const brandSel = document.getElementById('brandSel');
+  Object.keys(DB).sort().forEach(brand => {
+    const o = document.createElement('option');
+    o.value = brand; o.textContent = brand;
+    brandSel.appendChild(o);
+  });
+}
+
+function onBrandChange() {
+  const brand = document.getElementById('brandSel').value;
+  const modelSel = document.getElementById('modelSel');
+  modelSel.innerHTML = '<option value="">— Select model —</option>';
+  modelSel.disabled = !brand;
+  deviceParams = {}; activeCat = '';
+  if (!brand) return;
+  Object.keys(DB[brand]).sort().forEach(model => {
+    const o = document.createElement('option');
+    o.value = model; o.textContent = model;
+    modelSel.appendChild(o);
+  });
+}
+
+function onModelChange() {
+  const brand = document.getElementById('brandSel').value;
+  const model = document.getElementById('modelSel').value;
+  if (!brand || !model) return;
+  deviceName = brand + ' ' + model;
+  deviceParams = DB[brand][model];
+  const cats = Object.keys(deviceParams);
+  activeCat = cats.length ? cats[0] : '';
+  const total = cats.reduce((a,c) => a + deviceParams[c].length, 0);
+  document.getElementById('deviceInfo').textContent = total + ' parameters';
+  renderMain();
+}
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+const NUM_SETS=4, NUM_KNOBS=6;
+const KNOB_COLORS=['#e84040','#e87020','#c8a000','#28a050','#1878d0','#8040c0'];
+const SET_COLORS=['#2563eb','#16a34a','#ea580c','#7c3aed'];
+const SET_COLORS_LIGHT=['#dbeafe','#dcfce7','#ffedd5','#ede9fe'];
+const SET_COLORS_MID=['#93c5fd','#86efac','#fdba74','#c4b5fd'];
+const SET_NAMES=['Set 1','Set 2','Set 3','Set 4'];
+function mkKnob(i){return{alias:`K${i+1}`,cc:null,paramName:null,category:null,midiCh:0,midiDef:64};}
+function mkSet(i){return{name:SET_NAMES[i],knobs:Array.from({length:NUM_KNOBS},(_,k)=>mkKnob(k))};}
+let sets=Array.from({length:NUM_SETS},(_,i)=>mkSet(i));
+let activeSet=0, activeKnob=0;
+
+function getNote(cat,cc){
+  if(!cat||!deviceParams[cat])return'';
+  const p=deviceParams[cat].find(x=>x.cc===cc);
+  return p?p.note:'';
+}
+
+function renderSetTabs(){
+  const el=document.getElementById('setTabs');
+  el.innerHTML='';
+  sets.forEach((s,i)=>{
+    const n=s.knobs.filter(k=>k.cc!==null).length;
+    const d=document.createElement('div');
+    d.className='set-tab';
+    if(i===activeSet){
+      d.style.background=SET_COLORS[i];
+      d.style.borderColor=SET_COLORS[i];
+      d.style.color='#fff';
+    } else {
+      d.style.background=SET_COLORS_LIGHT[i];
+      d.style.borderColor=SET_COLORS_MID[i];
+      d.style.color=SET_COLORS[i];
+    }
+    d.innerHTML=`<div class="set-tab-name">${s.name}</div><div class="set-tab-count">${n}/${NUM_KNOBS}</div>`;
+    d.onclick=()=>{activeSet=i;activeKnob=0;renderAll();};
+    el.appendChild(d);
+  });
+  document.getElementById('setNameInp').value=sets[activeSet].name;
+  document.getElementById('setNameInp').style.borderColor=SET_COLORS[activeSet];
+  document.getElementById('knobLabel').textContent=`Knobs — ${sets[activeSet].name}`;
+}
+
+function renderKnobList(){
+  const el=document.getElementById('knobList');
+  el.innerHTML='';
+  sets[activeSet].knobs.forEach((k,i)=>{
+    const d=document.createElement('div');
+    d.className='knob-item';
+    if(i===activeKnob){d.style.borderColor=KNOB_COLORS[i];d.style.background=KNOB_COLORS[i]+'15';}
+    d.onclick=()=>{activeKnob=i;renderKnobList();renderMain();};
+    d.innerHTML=`
+      <div class="ki-row">
+        <span class="ki-dot" style="background:${KNOB_COLORS[i]}"></span>
+        <span class="ki-num">K${i+1}</span>
+        <span class="ki-cc">${k.cc!==null?'CC'+k.cc:'—'}</span>
+        <span class="ki-ch">${k.cc!==null?'ch'+(k.midiCh+1):''}</span>
+      </div>
+      <div>${k.cc!==null?`<div class="ki-name">${k.alias}</div>`:'<div class="ki-unset">unassigned</div>'}</div>`;
+    el.appendChild(d);
+  });
+}
+
+function renderMain(){
+  if(!Object.keys(deviceParams).length){
+    document.getElementById('mainArea').innerHTML=`<div class="no-device"><p>Select a device above to assign MIDI CCs to knobs.</p></div>`;
+    return;
+  }
+  const k=sets[activeSet].knobs[activeKnob];
+  const col=KNOB_COLORS[activeKnob];
+  const setCol=SET_COLORS[activeSet];
+  document.getElementById('mainArea').innerHTML=`
+    <div class="main-hdr">
+      <span class="main-hdr-dot" style="background:${col}"></span>
+      <div>
+        <h2 style="color:${col}">${sets[activeSet].name} / Knob ${activeKnob+1}</h2>
+        <p>Assign a parameter and MIDI channel for this knob.</p>
+      </div>
+    </div>
+    <div class="card" style="border-left:3px solid ${setCol}">
+      <h3>Knob config</h3>
+      <div class="form-row">
+        <label>Label</label>
+        <input type="text" id="aliasIn" value="${k.alias}"
+          oninput="sets[activeSet].knobs[activeKnob].alias=this.value;renderKnobList();" />
+      </div>
+      <div class="form-row">
+        <label>MIDI ch</label>
+        <select id="chSel" onchange="sets[activeSet].knobs[activeKnob].midiCh=parseInt(this.value);renderKnobList();">
+          ${Array.from({length:16},(_,i)=>`<option value="${i}"${k.midiCh===i?' selected':''}>Channel ${i+1}</option>`).join('')}
+        </select>
+      </div>
+      ${k.cc!==null?`
+      <div class="info-row">
+        <span class="info-pill">
+          <strong>${k.category}: ${k.paramName}</strong>
+          &nbsp;·&nbsp; CC <strong style="color:${col}">${k.cc}</strong>
+          ${getNote(k.category,k.cc)?`&nbsp;·&nbsp; ${getNote(k.category,k.cc)}`:''}
+        </span>
+        <button class="clear-btn" onclick="clearKnob()">[ clear ]</button>
+      </div>`:''}
+    </div>
+    <div class="card">
+      <h3>Parameter — ${deviceName}</h3>
+      <div class="cat-grid" id="catGrid"></div>
+      <div id="paramSec"></div>
+    </div>
+  `;
+  renderCats();
+}
+
+function renderCats(){
+  const el=document.getElementById('catGrid');
+  if(!el)return;
+  el.innerHTML='';
+  Object.keys(deviceParams).forEach(c=>{
+    const b=document.createElement('button');
+    b.className='cat-btn'+(c===activeCat?' active':'');
+    b.textContent=c;
+    b.onclick=()=>{activeCat=c;renderCats();renderParams();};
+    el.appendChild(b);
+  });
+  renderParams();
+}
+
+function renderParams(){
+  const sec=document.getElementById('paramSec');
+  if(!sec)return;
+  const k=sets[activeSet].knobs[activeKnob];
+  const params=deviceParams[activeCat]||[];
+  sec.innerHTML='<div class="param-grid" id="paramGrid"></div>';
+  const grid=document.getElementById('paramGrid');
+  params.forEach(p=>{
+    const sel=k.cc===p.cc&&k.category===activeCat;
+    const b=document.createElement('button');
+    b.className='param-btn'+(sel?' selected':'');
+    b.innerHTML=`<span>${p.name}</span><span class="param-cc">CC ${p.cc}</span>`;
+    b.onclick=()=>{
+      const kn=sets[activeSet].knobs[activeKnob];
+      kn.cc=p.cc; kn.paramName=p.name; kn.category=activeCat; kn.midiDef=p.def;
+      if(kn.alias===`K${activeKnob+1}`) kn.alias=p.name;
+      renderKnobList(); renderMain();
+    };
+    grid.appendChild(b);
+  });
+}
+
+function clearKnob(){sets[activeSet].knobs[activeKnob]=mkKnob(activeKnob);renderKnobList();renderMain();}
+function renameSet(v){sets[activeSet].name=v||`Set ${activeSet+1}`;renderSetTabs();}
+function clearAll(){if(!confirm('Clear all assignments?'))return;sets=Array.from({length:NUM_SETS},(_,i)=>mkSet(i));activeSet=0;activeKnob=0;renderAll();}
+function renderAll(){renderSetTabs();renderKnobList();renderMain();}
+function showStatus(msg){const b=document.getElementById('status');b.textContent=msg;b.classList.add('show');setTimeout(()=>b.classList.remove('show'),3500);}
+
+function showOverview(){
+  const all=sets.flatMap((s,si)=>s.knobs.map((k,ki)=>({...k,setName:s.name,si,ki}))).filter(k=>k.cc!==null);
+  if(!all.length){showStatus('No knobs assigned yet');return;}
+  document.getElementById('mainArea').innerHTML=`
+    <div class="main-hdr"><div>
+      <h2 style="font-family:'Inconsolata',monospace">All assignments</h2>
+      <p>${all.length} total across ${NUM_SETS} sets.</p>
+    </div></div>
+    <div class="card">
+      <table class="ov-table">
+        <thead><tr><th>Set</th><th>Knob</th><th>Label</th><th>Parameter</th><th>CC</th><th>Ch</th><th>Note</th></tr></thead>
+        <tbody>
+          ${all.map(k=>`<tr>
+            <td><span class="ov-set ov-set-${k.si}">${k.setName}</span></td>
+            <td><span class="ov-mono" style="color:${KNOB_COLORS[k.ki]}">K${k.ki+1}</span></td>
+            <td>${k.alias}</td>
+            <td style="font-size:11px;color:var(--text2)">${k.category}: ${k.paramName}</td>
+            <td class="ov-mono">CC ${k.cc}</td>
+            <td class="ov-mono">ch${k.midiCh+1}</td>
+            <td class="ov-mono" style="color:var(--text3);font-size:10px">${getNote(k.category,k.cc)}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+function showRef(){
+  const patchName=document.getElementById('patchName').value.trim()||'Patch';
+  const total=sets.reduce((a,s)=>a+s.knobs.filter(k=>k.cc!==null).length,0);
+  if(!total){showStatus('No knobs assigned yet');return;}
+  document.getElementById('refTitle').textContent=patchName;
+  document.getElementById('refMeta').textContent=`${total} assignments · ${deviceName||'MIDI Controller'}`;
+  const body=document.getElementById('refBody');
+  body.innerHTML='';
+  sets.forEach((s,si)=>{
+    const block=document.createElement('div');
+    block.className='ref-set-block';
+    block.innerHTML=`<div class="ref-set-hdr ref-set-hdr-${si}">${s.name}</div><div class="ref-grid" id="rg-${si}"></div>`;
+    body.appendChild(block);
+    const grid=document.getElementById(`rg-${si}`);
+    s.knobs.forEach((k,ki)=>{
+      const d=document.createElement('div');
+      d.className='ref-knob';
+      d.style.borderLeftColor=KNOB_COLORS[ki];
+      d.style.borderLeftWidth='3px';
+      d.innerHTML=k.cc!==null?`
+        <div class="ref-kh"><span class="ref-knum ref-knum-${ki}">K${ki+1}</span><span class="ref-kcc">CC ${k.cc}</span></div>
+        <div class="ref-kname">${k.alias}</div>
+        <div class="ref-kcat">${k.category}</div>
+        <div class="ref-kch">ch ${k.midiCh+1}</div>`
+        :`<div class="ref-kh"><span class="ref-knum ref-knum-${ki}">K${ki+1}</span></div><div class="ref-empty">—</div>`;
+      grid.appendChild(d);
+    });
+  });
+  document.getElementById('refCard').classList.add('show');
+}
+function hideRef(){document.getElementById('refCard').classList.remove('show');}
+
+function triggerLoad(){document.getElementById('ymlFileIn').value='';document.getElementById('ymlFileIn').click();}
+
+function loadYML(input){
+  const file=input.files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    const text=e.target.result;
+    try{
+      const nameMatch=text.match(/patch_name:\s*'([^']*)'/);
+      if(nameMatch) document.getElementById('patchName').value=nameMatch[1];
+      const dataMatch=text.match(/data:\s*\|-\s*\n\s*([^\n]+)/);
+      if(!dataMatch) throw new Error('No save_state found');
+      const stateStr=dataMatch[1].trim();
+      const parts=stateStr.split('|');
+      if(parts.length<9) throw new Error('Invalid format');
+      sets=Array.from({length:NUM_SETS},(_,i)=>mkSet(i));
+      const as=parseInt(parts[0])||0;
+      activeSet=(as>=0&&as<NUM_SETS)?as:0;
+      for(let s=0;s<4;s++){
+        const ccs=(parts[s+1]||'').split(',').map(x=>parseInt(x)||0);
+        for(let k=0;k<NUM_KNOBS;k++){
+          const cc=ccs[k]||0;
+          if(cc>0){
+            sets[s].knobs[k].cc=cc;
+            let found=false;
+            for(const cat of Object.keys(deviceParams)){
+              const p=deviceParams[cat].find(x=>x.cc===cc);
+              if(p){sets[s].knobs[k].paramName=p.name;sets[s].knobs[k].category=cat;sets[s].knobs[k].midiDef=p.def;
+                if(sets[s].knobs[k].alias===`K${k+1}`)sets[s].knobs[k].alias=p.name;found=true;break;}
+            }
+            if(!found){sets[s].knobs[k].paramName='CC'+cc;sets[s].knobs[k].category='Unknown';sets[s].knobs[k].midiDef=64;}
+          }
+        }
+      }
+      for(let s=0;s<4;s++){
+        const chs=(parts[s+5]||'').split(',').map(x=>parseInt(x)||0);
+        for(let k=0;k<NUM_KNOBS;k++) sets[s].knobs[k].midiCh=Math.min(chs[k]||0,15);
+      }
+      for(let s=0;s<4;s++){const name=(parts[s+9]||'').trim();if(name)sets[s].name=name;}
+      activeKnob=0; renderAll();
+      showStatus('Loaded: '+file.name);
+    }catch(err){showStatus('Load failed: '+err.message);}
+  };
+  reader.readAsText(file);
+}
+
+function buildSaveState(){
+  const parts=[String(activeSet)];
+  for(let s=0;s<4;s++) parts.push(sets[s].knobs.map(k=>k.cc!==null?k.cc:0).join(','));
+  for(let s=0;s<4;s++) parts.push(sets[s].knobs.map(k=>k.midiCh).join(','));
+  for(let s=0;s<4;s++) parts.push(sets[s].name.replace(/[|,]/g,'').substring(0,8));
+  return parts.join('|');
+}
+
+function midiToStatic(midi){return (midi/127.0).toFixed(4);}
+
+function exportYML(){
+  const patchName=document.getElementById('patchName').value.trim()||'MIDI Controller';
+  const allKnobs=sets.flatMap(s=>s.knobs.filter(k=>k.cc!==null));
+  if(!allKnobs.length){showStatus('No knobs assigned');return;}
+  function buildSetEntry(s){
+    const assigned=s.knobs.filter(k=>k.cc!==null);
+    if(!assigned.length)return'';
+    let lines=`    - name: '${s.name.replace(/'/g,'')}'\n      set:\n`;
+    s.knobs.forEach((k,ki)=>{
+      if(!k.cc)return;
+      lines+=`        - panel_knob_id: ${ki}\n          module_id: 1\n          param_id: ${ki}\n          curve_type: 0\n          min: 0.0\n          max: 1.0\n`;
+    });
+    return lines;
+  }
+  let mappedKnobLines=buildSetEntry(sets[activeSet]);
+  sets.forEach((s,si)=>{if(si!==activeSet)mappedKnobLines+=buildSetEntry(s);});
+  if(!mappedKnobLines)mappedKnobLines=`    - name: '${sets[activeSet].name.replace(/'/g,'')}'\n      set: []\n`;
+  const stateData=buildSaveState();
+  const staticKnobs=sets[activeSet].knobs.map((k,i)=>
+    `    - {module_id: 1, param_id: ${i}, value: ${midiToStatic(k.midiDef)}}`
+  ).join('\n');
+  const yml=`PatchData:
+  patch_name: '${patchName.replace(/'/g,'')}'
+  description: '${deviceName||'MIDI Controller'} — CtrlCC plugin'
+  module_slugs:
+    0: HubMedium
+    1: 'CtrlCC:CtrlCC'
+  int_cables: []
+  mapped_ins: []
+  mapped_outs: []
+  static_knobs:
+${staticKnobs}
+  mapped_knobs:
+${mappedKnobLines}  midi_maps:
+    name: MIDI
+    set: []
+  midi_poly_num: 1
+  midi_poly_mode: 0
+  midi_pitchwheel_range: 1
+  mapped_lights: []
+  vcvModuleStates:
+    - module_id: 1
+      data: |-
+        ${stateData}
+  suggested_samplerate: 0
+  suggested_blocksize: 0
+  bypassed_modules: []
+  module_aliases: []
+`;
+  const blob=new Blob([yml],{type:'text/plain'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=patchName.replace(/[^a-z0-9\-_]/gi,'_')+'.yml';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+  showStatus(`Exported — ${allKnobs.length} assignments`);
+}
+
+initDeviceSelector();
+renderSetTabs();
+renderKnobList();
+
+</script>
+</body>
+</html>
