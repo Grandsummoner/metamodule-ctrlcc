@@ -94,19 +94,19 @@ struct Info : MetaModule::ModuleInfoBase {
     static constexpr float KnobSize = 15.17f;
 
     static constexpr std::array<MetaModule::Element, 13> Elements {{
-        makeKnob   (13.55f,  56.22f, KnobSize, "K1", "Knob 1 Red"),
-        makeKnob   (40.64f,  56.22f, KnobSize, "K2", "Knob 2 Orange"),
-        makeKnob   (67.74f,  56.22f, KnobSize, "K3", "Knob 3 Yellow"),
-        makeKnob   (13.55f,  93.70f, KnobSize, "K4", "Knob 4 Green"),
-        makeKnob   (40.64f,  93.70f, KnobSize, "K5", "Knob 5 Blue"),
-        makeKnob   (67.74f,  93.70f, KnobSize, "K6", "Knob 6 Purple"),
-        makeDisplay(39.00f,  18.00f, 35.00f,   6.00f, "CCDisp"),
-        makeDisplay(30.00f, 115.00f, 44.00f,   7.50f, "SetDisp"),
-        makeLight  (20.59f,  26.77f, 0x1BDA, "S1", "RytmCC/led_blue.png"),
-        makeLight  (28.18f,  26.77f, 0x2D0A, "S2", "RytmCC/led_green.png"),
-        makeLight  (35.77f,  26.77f, 0xE3C4, "S3", "RytmCC/led_orange.png"),
-        makeLight  (43.35f,  26.77f, 0x8218, "S4", "RytmCC/led_violet.png"),
-        makeAlt    ("NextSet", "Next Set"),
+        makeKnob   (13.55f,  56.22f, KnobSize, "K1", "Knob 1 Red"),       // row 1
+        makeKnob   (40.64f,  56.22f, KnobSize, "K2", "Knob 2 Orange"),    // row 2
+        makeKnob   (67.74f,  56.22f, KnobSize, "K3", "Knob 3 Yellow"),    // row 3
+        makeKnob   (13.55f,  93.70f, KnobSize, "K4", "Knob 4 Green"),     // row 4
+        makeKnob   (40.64f,  93.70f, KnobSize, "K5", "Knob 5 Blue"),      // row 5
+        makeKnob   (67.74f,  93.70f, KnobSize, "K6", "Knob 6 Purple"),    // row 6
+        makeDisplay(39.00f,  18.00f, 35.00f,   9.64f, "CCDisp"),          // row 7
+        makeDisplay(30.00f, 115.00f, 44.00f,   7.50f, "SetDisp"),         // row 8
+        makeLight  (20.59f,  26.77f, 0xFFFF, "S1", "RytmCC/led_ring.png"), // row 9
+        makeLight  (28.18f,  26.77f, 0xFFFF, "S2", "RytmCC/led_ring.png"), // row 10
+        makeLight  (35.77f,  26.77f, 0xFFFF, "S3", "RytmCC/led_ring.png"), // row 11
+        makeLight  (43.35f,  26.77f, 0xFFFF, "S4", "RytmCC/led_ring.png"), // row 12
+        makeAlt    ("NextSet", "Next Set"),                                // row 13
     }};
 
     enum Params { K1, K2, K3, K4, K5, K6, NumParams };
@@ -139,6 +139,9 @@ public:
     void set_samplerate(float) override {}
 
     void refreshDisplay(uint8_t ccNum, uint8_t midiVal, uint8_t ch) {
+        // Both strings exactly 14 chars
+        // IDLE:   "CC--- Ready   "
+        // ACTIVE: "CC045 Ch1 ||||"
         if (ccNum == 255) {
             snprintf(ccBuf, sizeof(ccBuf), "CC--- Ready   ");
         } else {
@@ -202,11 +205,11 @@ public:
     }
 
     float get_led_brightness(int led_id) const override {
-        // Active set = full brightness, others = dim
-        if (led_id == Info::SetLight1) return activeSet == 0 ? 1.0f : 0.15f;
-        if (led_id == Info::SetLight2) return activeSet == 1 ? 1.0f : 0.15f;
-        if (led_id == Info::SetLight3) return activeSet == 2 ? 1.0f : 0.15f;
-        if (led_id == Info::SetLight4) return activeSet == 3 ? 1.0f : 0.15f;
+        // Active set = ring visible (1.0), others = ring hidden (0.0)
+        if (led_id == Info::SetLight1) return activeSet == 0 ? 1.0f : 0.0f;
+        if (led_id == Info::SetLight2) return activeSet == 1 ? 1.0f : 0.0f;
+        if (led_id == Info::SetLight3) return activeSet == 2 ? 1.0f : 0.0f;
+        if (led_id == Info::SetLight4) return activeSet == 3 ? 1.0f : 0.0f;
         return 0.f;
     }
 
