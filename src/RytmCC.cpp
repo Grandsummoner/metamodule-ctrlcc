@@ -11,6 +11,7 @@
 #include <cstdint>
 #include <cstring>
 #include <cstdio>
+#include <cstdlib>
 
 static constexpr int NumKnobs = 6;
 static constexpr int NumSets  = 4;
@@ -96,21 +97,21 @@ struct Info : MetaModule::ModuleInfoBase {
     static constexpr float KnobSize = 15.17f;
 
     static constexpr std::array<MetaModule::Element, 13> Elements {{
-        makeKnob   (13.55f,  56.22f, KnobSize, "K1", "Knob 1 Red"),       // row 1
-        makeKnob   (40.64f,  56.22f, KnobSize, "K2", "Knob 2 Orange"),    // row 2
-        makeKnob   (67.74f,  56.22f, KnobSize, "K3", "Knob 3 Yellow"),    // row 3
-        makeKnob   (13.55f,  93.70f, KnobSize, "K4", "Knob 4 Green"),     // row 4
-        makeKnob   (40.64f,  93.70f, KnobSize, "K5", "Knob 5 Blue"),      // row 5
-        makeKnob   (67.74f,  93.70f, KnobSize, "K6", "Knob 6 Purple"),    // row 6
+        makeKnob   (13.55f,  56.22f, KnobSize, "K1", "Knob 1 Red"),
+        makeKnob   (40.64f,  56.22f, KnobSize, "K2", "Knob 2 Orange"),
+        makeKnob   (67.74f,  56.22f, KnobSize, "K3", "Knob 3 Yellow"),
+        makeKnob   (13.55f,  93.70f, KnobSize, "K4", "Knob 4 Green"),
+        makeKnob   (40.64f,  93.70f, KnobSize, "K5", "Knob 5 Blue"),
+        makeKnob   (67.74f,  93.70f, KnobSize, "K6", "Knob 6 Purple"),
         makeDisplay(39.00f,  18.00f, 35.00f,   9.64f, "CCDisp",
-                    Colors565::White),                                      // row 7
+                    Colors565::White),
         makeDisplay(30.00f, 115.00f, 44.00f,   7.50f, "SetDisp",
-                    Colors565::Cyan),                                       // row 8
-        makeLight  (20.59f,  26.77f, Colors565::Blue,   "S1", "RytmCC/led_ring.png"), // row 9
-        makeLight  (28.18f,  26.77f, Colors565::Green,  "S2", "RytmCC/led_ring.png"), // row 10
-        makeLight  (35.77f,  26.77f, Colors565::Orange, "S3", "RytmCC/led_ring.png"), // row 11
-        makeLight  (43.35f,  26.77f, Colors565::Purple, "S4", "RytmCC/led_ring.png"), // row 12
-        makeAlt    ("NextSet", "Next Set"),                                // row 13
+                    Colors565::Cyan),
+        makeLight  (20.59f,  26.77f, Colors565::Blue,   "S1", "RytmCC/led_ring.png"),
+        makeLight  (28.18f,  26.77f, Colors565::Green,  "S2", "RytmCC/led_ring.png"),
+        makeLight  (35.77f,  26.77f, Colors565::Orange, "S3", "RytmCC/led_ring.png"),
+        makeLight  (43.35f,  26.77f, Colors565::Purple, "S4", "RytmCC/led_ring.png"),
+        makeAlt    ("NextSet", "Next Set"),
     }};
 
     enum Params { K1, K2, K3, K4, K5, K6, NumParams };
@@ -179,8 +180,7 @@ public:
                 uint8_t midiVal = static_cast<uint8_t>(v * 127.f) & 0x7F;
 
                 rack::midi::Message msg;
-                msg.bytes[0] = static_cast<uint8_t>(
-                    0xB0 | (ch & 0x0F));
+                msg.bytes[0] = static_cast<uint8_t>(0xB0 | (ch & 0x0F));
                 msg.bytes[1] = ccNum & 0x7F;
                 msg.bytes[2] = midiVal;
                 midiOut.sendMessage(msg);
@@ -231,49 +231,95 @@ public:
     float get_output(int) const override { return 0.f; }
 
     std::string save_state() override {
-        std::string out;
-        out += static_cast<char>('0' + activeSet);
-        for (int s = 0; s < NumSets; s++)
-            for (int k = 0; k < NumKnobs; k++)
-                out += static_cast<char>(savedCC[s][k]);
-        for (int s = 0; s < NumSets; s++)
-            for (int k = 0; k < NumKnobs; k++)
-                out += static_cast<char>(savedCh[s][k]);
+        // Format: activeSet|cc[s0]|cc[s1]|cc[s2]|cc[s3]|ch[s0]|ch[s1]|ch[s2]|ch[s3]|name0|name1|name2|name3
+        // Each cc/ch group: 6 comma-separated decimal numbers
+        // All printable ASCII — YAML and WiFi safe
+        char buf[512] = {};
+        int pos = 0;
+
+        // active set
+        pos += snprintf(buf + pos, sizeof(buf) - pos, "%d", activeSet);
+
+        // CC numbers (4 sets × 6 knobs)
         for (int s = 0; s < NumSets; s++) {
-            char buf[9] = {};
-            snprintf(buf, sizeof(buf), "%.8s", setNames[s]);
-            for (int i = 0; i < 8; i++) out += buf[i];
+            buf[pos++] = '|';
+            for (int k = 0; k < NumKnobs; k++) {
+                pos += snprintf(buf + pos, sizeof(buf) - pos,
+                    "%s%d", k > 0 ? "," : "", savedCC[s][k]);
+            }
         }
-        return out;
+
+        // MIDI channels (4 sets × 6 knobs)
+        for (int s = 0; s < NumSets; s++) {
+            buf[pos++] = '|';
+            for (int k = 0; k < NumKnobs; k++) {
+                pos += snprintf(buf + pos, sizeof(buf) - pos,
+                    "%s%d", k > 0 ? "," : "", savedCh[s][k]);
+            }
+        }
+
+        // Set names (pipe and comma stripped, max 8 chars each)
+        for (int s = 0; s < NumSets; s++) {
+            buf[pos++] = '|';
+            for (int i = 0; i < 8 && setNames[s][i]; i++) {
+                char c = setNames[s][i];
+                if (c != '|' && c != ',') buf[pos++] = c;
+            }
+        }
+
+        return std::string(buf, pos);
     }
 
     void load_state(std::string_view sv) override {
         if (sv.empty()) return;
-        size_t pos = 0;
 
-        if (pos < sv.size() &&
-            sv[pos] >= '0' && sv[pos] < '0' + NumSets)
-            activeSet = sv[pos] - '0';
-        pos++;
+        // Split into 13 pipe-delimited fields
+        char fields[13][64] = {};
+        int fi = 0, ci = 0;
+        for (size_t i = 0; i <= sv.size() && fi < 13; i++) {
+            char c = (i < sv.size()) ? sv[i] : '|';
+            if (c == '|') {
+                fields[fi][ci] = 0;
+                fi++;
+                ci = 0;
+            } else if (ci < 63) {
+                fields[fi][ci++] = c;
+            }
+        }
+        if (fi < 9) return; // need activeSet + 4 cc groups + 4 ch groups
 
-        for (int s = 0; s < NumSets && pos < sv.size(); s++)
-            for (int k = 0; k < NumKnobs && pos < sv.size(); k++, pos++)
-                savedCC[s][k] = static_cast<uint8_t>(sv[pos]);
+        // Field 0: active set
+        int as = fields[0][0] - '0';
+        if (as >= 0 && as < NumSets) activeSet = as;
 
-        for (int s = 0; s < NumSets && pos < sv.size(); s++)
-            for (int k = 0; k < NumKnobs && pos < sv.size(); k++, pos++)
-                savedCh[s][k] = static_cast<uint8_t>(sv[pos]) & 0x0F;
+        // Fields 1-4: CC numbers per set
+        for (int s = 0; s < NumSets && (s + 1) < fi; s++) {
+            const char* p = fields[s + 1];
+            for (int k = 0; k < NumKnobs; k++) {
+                savedCC[s][k] = (uint8_t)(atoi(p) & 0x7F);
+                p = strchr(p, ',');
+                if (!p) break;
+                p++;
+            }
+        }
 
-        for (int s = 0; s < NumSets && pos + 8 <= sv.size();
-             s++, pos += 8) {
-            char buf[9] = {};
-            for (int i = 0; i < 8; i++) buf[i] = sv[pos + i];
-            buf[8] = 0;
-            bool hasContent = false;
-            for (int i = 0; i < 8; i++)
-                if (buf[i] > 0x20) { hasContent = true; break; }
-            if (hasContent)
-                snprintf(setNames[s], sizeof(setNames[s]), "%s", buf);
+        // Fields 5-8: MIDI channels per set
+        for (int s = 0; s < NumSets && (s + 5) < fi; s++) {
+            const char* p = fields[s + 5];
+            for (int k = 0; k < NumKnobs; k++) {
+                savedCh[s][k] = (uint8_t)(atoi(p) & 0x0F);
+                p = strchr(p, ',');
+                if (!p) break;
+                p++;
+            }
+        }
+
+        // Fields 9-12: set names
+        for (int s = 0; s < NumSets && (s + 9) < fi; s++) {
+            if (fields[s + 9][0]) {
+                snprintf(setNames[s], sizeof(setNames[s]),
+                    "%s", fields[s + 9]);
+            }
         }
 
         for (int k = 0; k < NumKnobs; k++) lastVal[k] = -1.f;
